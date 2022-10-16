@@ -31,6 +31,7 @@ if(WIN32)
 	link_directories(("C:/VulkanSDK/1.3.224.1/Lib"))
 	link_directories("${PROJECT_SOURCE_DIR}/include/glfw/lib-vc2022")
 	include_directories("${PROJECT_SOURCE_DIR}/include/glfw/include")
+	add_link_options("/NODEFAULTLIB:library")
 
 elseif(UNIX AND NOT APPLE)
 
