@@ -4,7 +4,6 @@ project(VoxelTrace VERSION 0.1.0)
 set(CMAKE_CXX_STANDARD 17)
 set(BIN_NAME "VoxelTrace")
 file(GLOB SOURCES "*.cpp")
-file(GLOB IMGUI_SRC "${PROJECT_SOURCE_DIR}/include/imgui/*.cpp")
 add_definitions( -DSRCDIR="${PROJECT_SOURCE_DIR}")
 
 if(WIN32)
