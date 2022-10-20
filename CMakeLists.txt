@@ -50,17 +50,22 @@ set(
 add_executable(${BIN_NAME} ${SOURCES} ${IMGUI_SRC})
 
 if(MSVC)
-  target_compile_options(${BIN_NAME} PRIVATE /W3 /WX)
-  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
-else()
-  target_compile_options(${BIN_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
-endif()
-if(WIN32)
+	target_compile_options(${BIN_NAME} PRIVATE /W3 /WX)
+	set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
 	target_link_libraries(${BIN_NAME} vulkan-1.lib)
 	target_link_libraries(${BIN_NAME} glfw3.lib)
 	add_custom_command(
 		TARGET ${BIN_NAME} PRE_BUILD
 		COMMAND compile.bat
+		WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/shaders
+	)
+else()
+	target_compile_options(${BIN_NAME} PRIVATE -Wall -Wextra -Wpedantic)	
+	target_link_libraries(${BIN_NAME} vulkan)
+	target_link_libraries(${BIN_NAME} glfw)
+	add_custom_command(
+		TARGET ${BIN_NAME} PRE_BUILD
+		COMMAND ${PROJECT_SOURCE_DIR}/shaders/compile.sh
 		WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/shaders
 	)
 endif()
