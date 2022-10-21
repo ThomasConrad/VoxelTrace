@@ -260,24 +260,16 @@ private:
     }
 
     void cleanupSwapChain() {
-
-        
         for (auto framebuffer : imguiFramebuffers) {
             vkDestroyFramebuffer(device, framebuffer, nullptr);
         }
         vkDestroyRenderPass(device, imguiRenderPass, nullptr);
-
         vkFreeCommandBuffers(device, imGuiCommandPool, static_cast<uint32_t>(imGuiCommandBuffers.size()), imGuiCommandBuffers.data());
         vkDestroyCommandPool(device, imGuiCommandPool, nullptr);
-        
+
         for (auto framebuffer : swapChainFramebuffers) {
             vkDestroyFramebuffer(device, framebuffer, nullptr);
         }
-        vkDestroyPipeline(device, graphicsPipeline, nullptr);
-        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-
-        vkDestroyRenderPass(device, renderPass, nullptr);
-
         for (auto imageView : swapChainImageViews) {
             vkDestroyImageView(device, imageView, nullptr);
         }
@@ -292,6 +284,10 @@ private:
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
         vkDestroyDescriptorPool(device, imguiPool, nullptr);
+
+        vkDestroyPipeline(device, graphicsPipeline, nullptr);
+        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+        vkDestroyRenderPass(device, renderPass, nullptr);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             vkDestroyBuffer(device, uniformBuffers[i], nullptr);
@@ -1258,7 +1254,7 @@ private:
         //Upload fonts
         VkCommandBuffer command_buffer = beginSingleTimeCommands();
         ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
-        endSingleTimeCommands(command_buffer);     
+        endSingleTimeCommands(command_buffer);
     }    
 
     void imGuiSetupWindow() {
