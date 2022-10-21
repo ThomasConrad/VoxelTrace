@@ -3,7 +3,7 @@ project(VoxelTrace VERSION 0.1.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(BIN_NAME "VoxelTrace")
-file(GLOB SOURCES "*.cpp")
+file(GLOB SOURCES "${PROJECT_SOURCE_DIR}/*.cpp")
 file(GLOB IMGUI_SRC "${PROJECT_SOURCE_DIR}/include/imgui/*.cpp")
 add_definitions( -DSRCDIR="${PROJECT_SOURCE_DIR}")
 
@@ -31,7 +31,6 @@ if(WIN32)
 	link_directories(("C:/VulkanSDK/1.3.224.1/Lib"))
 	link_directories("${PROJECT_SOURCE_DIR}/include/glfw/lib-vc2022")
 	include_directories("${PROJECT_SOURCE_DIR}/include/glfw/include")
-	add_link_options("/NODEFAULTLIB:library")
 
 elseif(UNIX AND NOT APPLE)
 
@@ -52,17 +51,22 @@ set(
 add_executable(${BIN_NAME} ${SOURCES} ${IMGUI_SRC})
 
 if(MSVC)
-  target_compile_options(${BIN_NAME} PRIVATE /W3 /WX)
-  set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
-else()
-  target_compile_options(${BIN_NAME} PRIVATE -Wall -Wextra -Wpedantic -Werror)
-endif()
-if(WIN32)
+	target_compile_options(${BIN_NAME} PRIVATE /W3 /WX)
+	set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
 	target_link_libraries(${BIN_NAME} vulkan-1.lib)
 	target_link_libraries(${BIN_NAME} glfw3.lib)
 	add_custom_command(
 		TARGET ${BIN_NAME} PRE_BUILD
 		COMMAND compile.bat
+		WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/shaders
+	)
+else()
+	target_compile_options(${BIN_NAME} PRIVATE -Wall -Wextra -Wpedantic)	
+	target_link_libraries(${BIN_NAME} vulkan)
+	target_link_libraries(${BIN_NAME} glfw)
+	add_custom_command(
+		TARGET ${BIN_NAME} PRE_BUILD
+		COMMAND ${PROJECT_SOURCE_DIR}/shaders/compile.sh
 		WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/shaders
 	)
 endif()
