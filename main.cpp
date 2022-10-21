@@ -243,7 +243,6 @@ private:
         int frameCount = 0;
         auto startTime = std::chrono::high_resolution_clock::now();
         auto time = std::chrono::duration<float, std::chrono::seconds::period>(std::chrono::high_resolution_clock::now() - startTime).count();
-       imGuiSetupWindow();
         while (!glfwWindowShouldClose(window)){
             glfwPollEvents();
             drawFrame();
@@ -1257,8 +1256,8 @@ private:
         endSingleTimeCommands(command_buffer);
     }    
 
-    void imGuiSetupWindow() {
-		ImGuiIO& io = ImGui::GetIO();
+    void imGuiRefreshWindow() {
+		//ImGuiIO& io = ImGui::GetIO();
 		// Start the Dear ImGui frame
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
@@ -1430,6 +1429,7 @@ private:
     }
 
     void drawFrame(){
+        imGuiRefreshWindow();
         vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
         uint32_t imageIndex;
