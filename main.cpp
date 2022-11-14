@@ -263,6 +263,7 @@ private:
             vkDestroyFramebuffer(device, framebuffer, nullptr);
         }
         vkDestroyRenderPass(device, imguiRenderPass, nullptr);
+
         vkFreeCommandBuffers(device, imGuiCommandPool, static_cast<uint32_t>(imGuiCommandBuffers.size()), imGuiCommandBuffers.data());
         vkDestroyCommandPool(device, imGuiCommandPool, nullptr);
 
@@ -1254,6 +1255,7 @@ private:
         VkCommandBuffer command_buffer = beginSingleTimeCommands();
         ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
         endSingleTimeCommands(command_buffer);
+        ImGui_ImplVulkan_DestroyFontUploadObjects();
     }    
 
     void imGuiRefreshWindow() {
@@ -1460,34 +1462,34 @@ private:
         }
 
         //Create framebuffers for imgui
-        imguiFramebuffers.resize(swapChainImageViews.size());
-        for (size_t k = 0; k < swapChainImageViews.size(); k++) {
-            VkImageView attachments[] = {
-                swapChainImageViews[k]
-            };
-            VkFramebufferCreateInfo info = {};
-            info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-            info.renderPass = imguiRenderPass;
-            info.attachmentCount = 1;
-            info.pAttachments = attachments;
-            info.width = swapChainExtent.width;
-            info.height = swapChainExtent.height;
-            info.layers = 1;
+        imguiFramebuffers.resize(swapChainImages.size());
+        VkImageView attachment[1];
+        VkFramebufferCreateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        info.renderPass = imguiRenderPass;
+        info.attachmentCount = 1;
+        info.pAttachments = attachment;
+        info.width = swapChainExtent.width;
+        info.height = swapChainExtent.height;
+        info.layers = 1;
+        for (size_t k = 0; k < swapChainImages.size(); k++) {
+            attachment[0] = swapChainImageViews[k];
             if (vkCreateFramebuffer(device, &info, nullptr, &imguiFramebuffers[k]) != VK_SUCCESS) {
                 throw std::runtime_error("failed to create imgui framebuffer!");
             }
         }
 
-        VkRenderPassBeginInfo info = {};
-        info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        info.renderPass = imguiRenderPass;
-        info.framebuffer = imguiFramebuffers[imageIndex];
-        info.renderArea.extent.width = swapChainExtent.width;
-        info.renderArea.extent.height = swapChainExtent.height;
-        info.clearValueCount = 1;
         VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
-        info.pClearValues = &clearColor;
-        vkCmdBeginRenderPass(imGuiCommandBuffers[currentFrame], &info, VK_SUBPASS_CONTENTS_INLINE);
+        VkRenderPassBeginInfo renderPassBeginInfo  = {};
+        renderPassBeginInfo .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO ;
+        renderPassBeginInfo .renderPass = imguiRenderPass;
+        renderPassBeginInfo .framebuffer = imguiFramebuffers[imageIndex];
+        renderPassBeginInfo .renderArea.extent.width = swapChainExtent.width;
+        renderPassBeginInfo .renderArea.extent.height = swapChainExtent.height;
+        renderPassBeginInfo .clearValueCount = 1;
+        renderPassBeginInfo .pClearValues = &clearColor;
+
+        vkCmdBeginRenderPass(imGuiCommandBuffers[currentFrame], &renderPassBeginInfo , VK_SUBPASS_CONTENTS_INLINE);
 
         // Record Imgui Draw Data and draw funcs into command buffer
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), imGuiCommandBuffers[currentFrame]);
