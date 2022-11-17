@@ -74,6 +74,45 @@ class OcTree {
 		}
 	}
 
+	struct qElem {
+		Node<T>* node;
+		size_t idx;
+		Cell* parent;
+	};
+
+	void flattenNodes(std::list<Grid>& pool,
+		std::queue<qElem>& queue)
+	{
+		struct qElem item = queue.front();
+		queue.pop();
+		Node<T>* node = item.node;
+		size_t parent_idx = item.idx;
+		Cell* parent = item.parent;
+
+		size_t poolSize = pool.size();
+		if (parent != NULL) {
+			size_t idx = poolSize - parent_idx;
+			*parent = Cell{ 0,0,(uint8)idx,2 }; //encode offset in cell
+		}
+		pool.push_back(Grid());//Add a new grid array to the pool
+		Grid* ptr = &(pool.back());
+		for (uint i = 0; i < 8; i++) { //Go through all children
+			if (node->child_exists.test(i)) {
+				if (node->depth != max_depth) { //we can go deeper so add to queue
+					Node<T>* child = node->children[i];
+					queue.push(qElem{ child, poolSize, &ptr->cells[i] });
+				}
+				else { //node.depth == max_depth
+					T* data = node->data;
+					ptr->cells[i] = Cell{ (uint8)data[i], //encode data in cell
+										 (uint8)data[i],
+										 (uint8)data[i],
+										 1 };
+				}
+			}
+		}
+	}
+
 public:
 	const uint max_depth;
 
@@ -136,54 +175,24 @@ public:
 		return false;
 	}
 
-	struct qElem{
-		Node<T>* node;
-		size_t idx;
-		Cell* parent;
-	};
-
-	void flattenNodes(struct qElem item,
-					  std::list<Grid> &pool,
-					  std::queue<qElem> &queue)
-		{
-		Node<T>* node = item.node;
-		size_t parent_idx = item.idx;
-		Cell* parent = item.parent;
-
-		size_t poolSize = pool.size();
-		if (parent != NULL){
-			size_t idx = poolSize - parent_idx;
-			*parent = Cell{0,0,(uint8)idx,2}; //encode offset in cell
-		}
-		pool.push_back(Grid());//Add a new grid array to the pool
-		Grid* ptr = &(pool.back());
-		for (uint i = 0; i < 8; i++){ //Go through all children
-			if (node->child_exists.test(i)){
-				if (node->depth != max_depth){ //we can go deeper so add to queue
-					Node<T>* child = node->children[i];
-					queue.push(qElem{child, poolSize, &ptr->cells[i]});
-				}
-				else{ //node.depth == max_depth
-					T* data = node->data;
-					ptr->cells[i] = Cell{(uint8)data[i], //encode data in cell
-												   (uint8)data[i],
-												   (uint8)data[i],
-												   1};
-				}
-			}
-		}
-	}
-
-	std::list<Grid> flatten(){
+	uint8* flatten(size_t &size){
 		std::list<Grid> pool;
 		std::queue<qElem> queue;
 		queue.push(qElem{&root, 0, NULL});
 		while (!queue.empty()) {
-			auto item = queue.front();
-			flattenNodes(item, pool, queue);
-			queue.pop();
+			flattenNodes(pool, queue);
 		}
 
-		return pool;
+        uint8* data = new uint8[pool.size() * sizeof(Grid)];
+        {
+            int i = 0;
+            for (Grid grid : pool) {
+                memcpy(&data[i], &grid, sizeof(Grid));
+                i += sizeof(Grid) / sizeof(uint8);
+            }
+        }
+        size = pool.size() * sizeof(Grid);
+
+        return data;
 	}
 };
