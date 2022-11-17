@@ -13,12 +13,14 @@
 #include <fstream> //Load files
 #include <shaderc/shaderc.hpp>
 #include <array>
+#include <chrono>
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #include <glm/glm.hpp>
-
 #include <glm/gtc/matrix_transform.hpp>
-#include <chrono>
+#include <glm/gtx/string_cast.hpp>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include <imgui/imgui.h>
@@ -200,6 +202,8 @@ private:
     bool framebufferResized = false;
     bool isImGuiWindowCreated = false;
 
+    VoxelSpace<Voxel>* model;
+
     void initWindow() {
         glfwInit();
 
@@ -248,7 +252,21 @@ private:
 
     void initOctree(){
         std::cout << "Initializing octree\n";
+        //model = Scene::noise_model(5, -0.5f, 1.0f);
+        model = new VoxelSpace<Voxel>(BBox{-1,1,-1,1,-1,1}, 2);
+        model->place_voxel_at_point(glm::vec3(0.f), Voxel());
+        Voxel out;
+        if (model->try_get_voxel_at_point(glm::vec3(0.f), out)) {
+            std::cout << "Found the voxel " << glm::to_string(out.albedo) << std::endl;
+        }
+
+
+
         return;
+    }
+
+    void cleanupOctree() {
+        free(model);
     }
 
     void mainLoop() {
@@ -353,6 +371,8 @@ private:
         vkDestroyDevice(device, nullptr);
         vkDestroyInstance(instance, nullptr);
 
+        //Cleanup the octree
+;        cleanupOctree();
         
         // Cleanup GLFW
         glfwDestroyWindow(window);

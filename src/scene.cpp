@@ -19,7 +19,7 @@ VoxelSpace<Voxel>* Scene::noise_model(uint levels, float threshold, float scale)
                 if (perlin.noise3D(i*scale/size,j*scale/size,k*scale/size) > threshold){
                     uint rand_adjust_red = rand()%30 - 15;
                     uint rand_adjust_gb = rand()%20 - 10;
-                    model->place_voxel_at_point(glm::vec3{i,j,k},Voxel(
+                    model->place_voxel_at_point(glm::vec3(i,j,k),Voxel(
                         glm::vec3(
                             220 + rand_adjust_red,
                             60 + rand_adjust_gb,
@@ -50,15 +50,15 @@ VoxelSpace<Voxel>* Scene::magicaVoxel(std::string file_name) {
     delete[] buffer;
     std::vector<std::pair<glm::vec3,Voxel>> voxels;
 
-    for (int i = 0; i < scene->num_instances; i++) {
+    for (uint i = 0; i < scene->num_instances; i++) {
         uint32_t model_index = scene->instances[i].model_index;
         ogt_vox_transform mat = scene->instances[model_index].transform;
         glm::mat4 transform = glm::make_mat4(reinterpret_cast<float*>(&mat));
         const ogt_vox_model* model = scene->models[model_index];
 
-        for (float i = 0; i < model->size_x; i++) {
-        for (float j = 0; j < model->size_y; j++) {
-        for (float k = 0; k < model->size_z; k++) {
+        for (uint i = 0; i < model->size_x; i++) {
+        for (uint j = 0; j < model->size_y; j++) {
+        for (uint k = 0; k < model->size_z; k++) {
             uint32_t voxel_index = i + (j * model->size_x) + (k * model->size_x * model->size_y);
             uint8_t color_index = model->voxel_data[voxel_index];
 
@@ -116,7 +116,7 @@ VoxelSpace<Voxel>* Scene::magicaVoxel(std::string file_name) {
                 bbox.y1, bbox.y1+length,
                 bbox.z1, bbox.z1+length};
 
-    auto vSpace = new VoxelSpace<Voxel>(bbox, floor(std::log2(length))-1);
+    auto vSpace = new VoxelSpace<Voxel>(bbox, (uint)floor(std::log2(length))-1);
     for (auto& v : voxels) 
         vSpace->place_voxel_at_point(v.first, v.second);
 

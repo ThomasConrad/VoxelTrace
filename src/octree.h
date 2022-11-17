@@ -1,9 +1,10 @@
 #pragma once
 
-typedef unsigned int uint;
-typedef unsigned char uint8;
+#include <list>
 #include <bitset>
+#include <queue>
 
+typedef unsigned char uint8;
 typedef unsigned int uint;
 
 template<typename T>
@@ -11,6 +12,15 @@ struct OcTreeResult {
 	uint depth;
 	T item;
 };
+
+typedef struct Cell{
+	uint8 data[4]; //24 bit color/pointer + 8 bit data
+}Cell;
+
+typedef struct Grid{
+	Cell val; //"Mipmapped" value of cells
+	Cell cells[8];
+}Grid;
 
 template<typename T>
 class OcTree {
@@ -41,13 +51,13 @@ class OcTree {
 
 	uint8 make_subindex_from_index(uint x, uint y, uint z, uint depth) {
 		uint mask = 1 << (max_depth - depth);
-		uint x_bit, y_bit, z_bit;
+		bool x_bit, y_bit, z_bit;
 		x_bit = x & mask;
 		y_bit = y & mask;
 		z_bit = z & mask;
 		return compose_subindex(x_bit, y_bit, z_bit);
 	}
-	static uint8 compose_subindex(uint x_bit, uint y_bit, uint z_bit) {
+	static uint8 compose_subindex(bool x_bit, bool y_bit, bool z_bit) {
 		uint out = 0;
 		if (x_bit) out += 4;
 		if (y_bit) out += 2;
@@ -69,7 +79,7 @@ public:
 
 	OcTree(uint max_depth) : max_depth{ max_depth }, root{ Node<T>(nullptr, 0, 0) } {}
 	uint get_range() {
-		return 1 << (max_depth+1);
+		return 1 << (max_depth+1); // 2^(max_depth+1)
 	}
 
 	void insert(uint x, uint y, uint z, T item) {
@@ -124,5 +134,56 @@ public:
 		}
 		result.depth = max_depth;
 		return false;
+	}
+
+	struct qElem{
+		Node<T>* node;
+		size_t idx;
+		Cell* parent;
+	};
+
+	void flattenNodes(struct qElem item,
+					  std::list<Grid> &pool,
+					  std::queue<qElem> &queue)
+		{
+		Node<T>* node = item.node;
+		size_t parent_idx = item.idx;
+		Cell* parent = item.parent;
+
+		size_t poolSize = pool.size();
+		if (parent != NULL){
+			size_t idx = poolSize - parent_idx;
+			*parent = Cell{0,0,(uint8)idx,2}; //encode offset in cell
+		}
+		pool.push_back(Grid());//Add a new grid array to the pool
+		Grid* ptr = &(pool.back());
+		for (uint i = 0; i < 8; i++){ //Go through all children
+			if (node->child_exists.test(i)){
+				if (node->depth != max_depth){ //we can go deeper so add to queue
+					Node<T>* child = node->children[i];
+					queue.push(qElem{child, poolSize, &ptr->cells[i]});
+				}
+				else{ //node.depth == max_depth
+					T* data = node->data;
+					ptr->cells[i] = Cell{(uint8)data[i], //encode data in cell
+												   (uint8)data[i],
+												   (uint8)data[i],
+												   1};
+				}
+			}
+		}
+	}
+
+	std::list<Grid> flatten(){
+		std::list<Grid> pool;
+		std::queue<qElem> queue;
+		queue.push(qElem{&root, 0, NULL});
+		while (!queue.empty()) {
+			auto item = queue.front();
+			flattenNodes(item, pool, queue);
+			queue.pop();
+		}
+
+		return pool;
 	}
 };

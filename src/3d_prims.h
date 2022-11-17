@@ -76,6 +76,8 @@ struct Voxel {
     Voxel() : albedo(glm::vec3(1.0,1.0,1.0)) {};
     Voxel(glm::vec3 col) : albedo(col) {};
     Voxel(glm::vec3 col, int _matType) : albedo(col) {};
+    Voxel(glm::vec3 col, float Le) : albedo(col) {};
+
     //Voxel() : albedo(glm::vec3(1.0,1.0,1.0)), emission(0.0f), matType(0) {}
     //Voxel(glm::vec3 col) : albedo(col), emission(0.0f), matType(0) {}
     //Voxel(glm::vec3 col, float Le) : albedo(col), emission(Le), matType(3) {}
@@ -108,5 +110,5 @@ struct HitInfo{
     float t; //distance from ray origin
     bool inside = false; //is ray inside object?
 
-    HitInfo() : obj(Voxel()), p(glm::vec3()), n(glm::vec3(0.0,0.0,1.0)) {};
+    HitInfo() : obj(Voxel()), p(glm::vec3()), n(glm::vec3(0.0, 0.0, 1.0)), depth(0), hit(false) {};
 };

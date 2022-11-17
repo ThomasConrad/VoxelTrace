@@ -9,8 +9,11 @@ add_executable(${BIN_NAME} main.cpp scene.h octree.h voxelspace.h 3d_prims.h)
 target_link_libraries(${BIN_NAME} PRIVATE imgui scene glfw Vulkan::Vulkan)
 target_include_directories(${BIN_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/include")
 
+add_executable(octest octest.cpp octree.h)
+
+
 if(MSVC)
-	set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
+	#set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
 	add_custom_command(
 		TARGET ${BIN_NAME} PRE_BUILD
 		COMMAND compile.bat

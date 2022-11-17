@@ -24,7 +24,7 @@ class VoxelSpace {
     //Translates a floating point in space to the corresponding index of a (deepest level) node in the octree
     glm::uvec3 point_to_octree_index(glm::vec3 const& point) {
 		//as it's all uints, casting should just floor it
-        return (point-bounding_box.min)*world_to_octree;
+        return (glm::uvec3)((point-bounding_box.min)*world_to_octree);
     }
     //Translates index in the octree to corresponding position in space (of corner closest to origin)
     glm::vec3 octree_index_to_point(glm::uvec3 const& oct_index) {
@@ -56,6 +56,8 @@ class VoxelSpace {
 
 public:
     OcTree<T> octree;
+    BBox bounding_box; //Points in the voxel space are greater or equal to the lower bound, and strictly lower than the upper bound
+
     //Test if a point is in the voxel space, and if so, output the octree index for it
     bool try_point_to_octree_index(glm::vec3 const& point, glm::uvec3& out) {
         if (is_point_in_bounding_box(point)) {
@@ -82,7 +84,6 @@ public:
         };
     }
 
-    BBox bounding_box; //Points in the voxel space are greater or equal to the lower bound, and strictly lower than the upper bound
 
     uint get_range() {
         return range;
@@ -92,7 +93,7 @@ public:
         glm::uvec3 oct_index;
         if (try_point_to_octree_index(point, oct_index)) {
             OcTreeResult<T> result;
-            bool voxel_exists = octree.get(oct_index.x, oct_index.y, oct_index.z, &result);
+            bool voxel_exists = octree.get(oct_index.x, oct_index.y, oct_index.z, result);
             if (voxel_exists) {
                 out = result.item;
                 return true;
