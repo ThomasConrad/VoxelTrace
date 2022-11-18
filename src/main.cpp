@@ -30,8 +30,6 @@
 #include "voxelspace.h"
 #include "scene.h"
 
-#define ver 1
-
 const uint32_t WIDTH = 1920;
 const uint32_t HEIGHT = 1080;
 
@@ -199,6 +197,9 @@ private:
     VkImageView textureImageView;
     VkSampler textureSampler;
 
+    uint8* treePool;
+    size_t poolSize;
+
     bool framebufferResized = false;
     bool isImGuiWindowCreated = false;
 
@@ -259,14 +260,14 @@ private:
         if (model->try_get_voxel_at_point(glm::vec3(0.f), out)) {
             std::cout << "Found the voxel " << glm::to_string(out.albedo) << std::endl;
         }
+        treePool = model->octree.flatten(poolSize);
 
-
-
+        free(model);
         return;
     }
 
     void cleanupOctree() {
-        free(model);
+        //free(model);
     }
 
     void mainLoop() {
@@ -570,7 +571,7 @@ private:
         samplerLayoutBinding.pImmutableSamplers = nullptr;
         samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-        std::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
+        std::array<VkDescriptorSetLayoutBinding, 3> bindings = {uboLayoutBinding, samplerLayoutBinding};
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -852,7 +853,7 @@ private:
     }
 
     void createTextureImageView(){
-        textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_SRGB);
+        textureImageView = createImageView(textureImage, VK_FORMAT_R8G8B8A8_UNORM);
     }
 
     void createTextureSampler() {
@@ -901,7 +902,7 @@ private:
     }
 
     //Create image buffer from file
-    void createTextureImage(){
+    /*void createTextureImage(){
         int texWidth, texHeight, texChannels;
         std::string prefix = SRCDIR;
         std::string path = prefix + '/' + "textures/texture.jpg";
@@ -932,6 +933,37 @@ private:
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
 
+    }*/
+
+    void createTextureImage() {
+        size_t texWidth, texHeight;
+        texWidth = sizeof(Grid)/sizeof(Cell); //Width is cells per grid, every cell is a pixel
+        texHeight = poolSize; //Height is amount of gridarrays
+        VkDeviceSize imageSize = texWidth * texHeight * sizeof(Cell); //every cell is 4 byte
+
+        if (!treePool) {
+            throw std::runtime_error("Tree pool not found!");
+        }
+
+        VkBuffer stagingBuffer;
+        VkDeviceMemory stagingBufferMemory;
+        createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+        void* data;
+        vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
+        memcpy(data, treePool, static_cast<size_t>(imageSize));
+        vkUnmapMemory(device, stagingBufferMemory);
+
+        free(treePool);
+
+        createImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
+
+        transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+        transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+        vkDestroyBuffer(device, stagingBuffer, nullptr);
+        vkFreeMemory(device, stagingBufferMemory, nullptr);
     }
 
     VkCommandBuffer beginSingleTimeCommands() {
@@ -1115,16 +1147,9 @@ private:
     }
     
     void createGraphicsPipeline() {
-        #if ver == 1
-            VkShaderModule vertShaderModule = createShaderModule("shaders/shader.vert.spv");
-            VkShaderModule fragShaderModule = createShaderModule("shaders/shader.frag.spv");
-        #elif ver == 2
-            VkShaderModule vertShaderModule = createShaderModule("shaders/raytrace.vert.spv");
-            VkShaderModule fragShaderModule = createShaderModule("shaders/raytrace.frag.spv");
-        #else
-            throw std::runtime_error("Weird verson version");
-        #endif
-        
+        VkShaderModule vertShaderModule = createShaderModule("shaders/voxeltrace.vert.spv");
+        VkShaderModule fragShaderModule = createShaderModule("shaders/voxeltrace.frag.spv");
+
         VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
         vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -1696,19 +1721,10 @@ private:
         auto currentTime = std::chrono::high_resolution_clock::now();
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
         //float time = 0;
-        #if ver == 1
-            
-            ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-            ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-            ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float) swapChainExtent.height, 0.1f, 10.0f);
-        #elif ver == 2
-            ubo.model = glm::mat4(1.0f);
-            ubo.view = glm::mat4(1.0f);
-            ubo.view[0][0] = swapChainExtent.width / (float) swapChainExtent.height;
-            ubo.proj = glm::mat4(1.0f);
-        #else
-            throw std::runtime_error("Weird verson version");
-        #endif
+        ubo.model = glm::mat4(1.0f);
+        ubo.view = glm::mat4(1.0f);
+        ubo.view[0][0] = swapChainExtent.width / (float)swapChainExtent.height;
+        ubo.proj = glm::mat4(1.0f);
         ubo.proj[1][1] *= -1;
 
         void* data;

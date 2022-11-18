@@ -104,11 +104,12 @@ class OcTree {
 				}
 				else { //node.depth == max_depth
 					T* data = node->data;
-					ptr->cells[i] = Cell{ (uint8)data[i], //encode data in cell
-										 (uint8)data[i],
-										 (uint8)data[i],
-										 1 };
-				}
+			        //Assume voxel payload
+                    ptr->cells[i] = Cell{(uint8)(data[i].albedo.r),  // encode data in cell
+                                         (uint8)(data[i].albedo.g),
+                                         (uint8)(data[i].albedo.b),
+                                         1};
+                }
 			}
 		}
 	}
@@ -174,8 +175,8 @@ public:
 		result.depth = max_depth;
 		return false;
 	}
-
-	uint8* flatten(size_t &size){
+    
+    uint8* flatten(size_t& size) {
 		std::list<Grid> pool;
 		std::queue<qElem> queue;
 		queue.push(qElem{&root, 0, NULL});
@@ -194,5 +195,5 @@ public:
         size = pool.size() * sizeof(Grid);
 
         return data;
-	}
+    }
 };
