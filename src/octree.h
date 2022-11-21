@@ -100,14 +100,16 @@ class OcTree {
 			if (node->child_exists.test(i)) {
 				if (node->depth != max_depth) { //we can go deeper so add to queue
 					Node<T>* child = node->children[i];
-					queue.push(qElem{ child, poolSize, &ptr->cells[i] });
+                    assert(child != NULL);
+
+                    queue.push(qElem{ child, poolSize, &ptr->cells[i] });
 				}
 				else { //node.depth == max_depth
 					T* data = node->data;
 			        //Assume voxel payload
-                    ptr->cells[i] = Cell{(uint8)(data[i].albedo.r),  // encode data in cell
-                                         (uint8)(data[i].albedo.g),
-                                         (uint8)(data[i].albedo.b),
+                    ptr->cells[i] = Cell{(uint8)(data[i].albedo.r*255.0),  // encode data in cell
+                                         (uint8)(data[i].albedo.g*255.0),
+                                         (uint8)(data[i].albedo.b*255.0),
                                          1};
                 }
 			}
@@ -117,7 +119,7 @@ class OcTree {
 public:
 	const uint max_depth;
 
-	OcTree(uint max_depth) : max_depth{ max_depth }, root{ Node<T>(nullptr, 0, 0) } {}
+	OcTree(uint _max_depth) : max_depth{ _max_depth }, root{ Node<T>(nullptr, 0, 0) } {}
 	uint get_range() {
 		return 1 << (max_depth+1); // 2^(max_depth+1)
 	}
@@ -192,7 +194,7 @@ public:
                 i += sizeof(Grid) / sizeof(uint8);
             }
         }
-        size = pool.size() * sizeof(Grid);
+        size = pool.size() * sizeof(Grid); //size of pool in bytes
 
         return data;
     }

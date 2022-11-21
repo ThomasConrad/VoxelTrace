@@ -1,6 +1,20 @@
 #version 450
 
-layout(binding = 1) uniform sampler2D pool;
+struct Cell {
+    uint data;
+};
+
+struct Grid {
+    Cell val;
+    Cell cells[8];
+};
+
+layout(binding = 1) uniform VoxelVolume{
+    Grid grids[];
+} pool;
+
+
+layout(binding = 2) uniform sampler2D image;
 
 layout(location = 0) in vec3 pos;
 
@@ -33,6 +47,9 @@ void main() {
     else{
         outColor.xyz = vec3(0.0,0.0,1.0);
     }
+    uint vertexColor = pool.grids[0].val.data;
+    vec4 color = vec4((vertexColor & 0x000000FF) >> 0, (vertexColor & 0x0000FF00) >> 8, (vertexColor & 0x00FF0000) >> 16, (vertexColor & 0xFF000000)>> 24);
+    outColor.xyz = color.xyz;
     outColor.w = 1.0;
 
 }

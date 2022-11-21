@@ -10,7 +10,7 @@
 
 VoxelSpace<Voxel>* Scene::noise_model(uint levels, float threshold, float scale) {
     uint size = 1 << levels;
-    auto model = new VoxelSpace<Voxel>(BBox{0.0, (float)size, 0.0, (float)size, 0.0, (float)size}, levels - 1);
+    VoxelSpace<Voxel>* model = new VoxelSpace<Voxel>(BBox{0.0, (float)size, 0.0, (float)size, 0.0, (float)size}, levels - 1);
     const siv::PerlinNoise::seed_type seed = rand();
 	const siv::PerlinNoise perlin{seed};
     for (float i = 0; i < size; i++) {

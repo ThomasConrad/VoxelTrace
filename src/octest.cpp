@@ -12,6 +12,7 @@ int main() {
 
     tree.insert(0, 0, 0, 1);
     tree.insert(1, 1, 2, 5);
+    tree.insert(4, 4, 2, 3);
 
     OcTreeResult<int> res;
     if (tree.get(0, 0, 0, res))

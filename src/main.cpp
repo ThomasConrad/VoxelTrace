@@ -30,6 +30,9 @@
 #include "voxelspace.h"
 #include "scene.h"
 
+#define Print(x) std::cout << x << std::endl;
+#define Println(x) std::cout << x;
+
 const uint32_t WIDTH = 1920;
 const uint32_t HEIGHT = 1080;
 
@@ -179,6 +182,9 @@ private:
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
 
+    VkBuffer poolBuffer;
+    VkDeviceMemory poolBuffersMemory;
+
     VkDescriptorPool descriptorPool;
     VkDescriptorPool uiDescriptorPool = VK_NULL_HANDLE;
     std::vector<VkDescriptorSet> descriptorSets;
@@ -189,6 +195,8 @@ private:
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
+
+    VkPhysicalDeviceLimits deviceLimits;
 
     uint32_t currentFrame = 0;
 
@@ -245,23 +253,45 @@ private:
         createVertexBuffer();
         createIndexBuffer();
         createUniformBuffers();
+        createPoolBuffers(); //For the octree pool
         createDescriptorPool();
         createDescriptorSets();
+        uploadTreePool();
         createCommandBuffers();
         createSyncObjects();
     }
 
     void initOctree(){
         std::cout << "Initializing octree\n";
-        //model = Scene::noise_model(5, -0.5f, 1.0f);
-        model = new VoxelSpace<Voxel>(BBox{-1,1,-1,1,-1,1}, 2);
-        model->place_voxel_at_point(glm::vec3(0.f), Voxel());
+        //model = Scene::noise_model(2, -.2f, 1.0f);
+        uint depth = 7;
+        uint range = 1 << (depth+1);
+        model = new VoxelSpace<Voxel>(BBox{0,1,0,1,0,1}, depth);
+        for (int i = 0; i < range; i++) {
+            for (int j = 0; j < range; j++) {
+                for (int k = 0; k < range; k++) {
+                    glm::vec3 coord = glm::vec3(i,j,k)/(float)range;
+                    model->place_voxel_at_point(coord, Voxel());
+                }
+            }
+        }
+
         Voxel out;
         if (model->try_get_voxel_at_point(glm::vec3(0.f), out)) {
             std::cout << "Found the voxel " << glm::to_string(out.albedo) << std::endl;
         }
-        treePool = model->octree.flatten(poolSize);
-
+        OcTree<Voxel> tree = model->octree;
+        treePool = tree.flatten(poolSize);
+        treePool[0] = 255;
+        treePool[1] = 0;
+        treePool[2] = 0;
+        /*for (int i = 0; i < poolSize; i++) {
+            Println((int)treePool[i] << " ");
+            if (i % 4 == 3)
+                Print("");
+            if (i % (4 * 9) == 4 * 9 - 1)
+                Print("");
+        }*/
         free(model);
         return;
     }
@@ -331,7 +361,8 @@ private:
         ImGui_ImplGlfw_Shutdown();
         ImGui::DestroyContext();
         vkDestroyDescriptorPool(device, uiDescriptorPool, nullptr);
-
+        vkDestroyBuffer(device, poolBuffer, nullptr);
+        vkFreeMemory(device, poolBuffersMemory, nullptr);
         //Destroy uniforms
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             vkDestroyBuffer(device, uniformBuffers[i], nullptr);
@@ -499,12 +530,18 @@ private:
             bufferInfo.offset = 0;
             bufferInfo.range = sizeof(UniformBufferObject);
 
+            VkDescriptorBufferInfo poolBufferInfo{};
+            poolBufferInfo.buffer = poolBuffer;
+            poolBufferInfo.offset = 0;
+            poolBufferInfo.range = poolSize;
+            
+
             VkDescriptorImageInfo imageInfo{};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo.imageView = textureImageView;
             imageInfo.sampler = textureSampler;
 
-            std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+            std::array<VkWriteDescriptorSet, 3> descriptorWrites{};
 
             descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
             descriptorWrites[0].dstSet = descriptorSets[i];
@@ -518,9 +555,18 @@ private:
             descriptorWrites[1].dstSet = descriptorSets[i];
             descriptorWrites[1].dstBinding = 1;
             descriptorWrites[1].dstArrayElement = 0;
-            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             descriptorWrites[1].descriptorCount = 1;
-            descriptorWrites[1].pImageInfo = &imageInfo;
+            descriptorWrites[1].pBufferInfo = &poolBufferInfo;
+
+            descriptorWrites[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites[2].dstSet = descriptorSets[i];
+            descriptorWrites[2].dstBinding = 2;
+            descriptorWrites[2].dstArrayElement = 0;
+            descriptorWrites[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites[2].descriptorCount = 1;
+            descriptorWrites[2].pImageInfo = &imageInfo;
+
 
             vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
@@ -528,11 +574,13 @@ private:
 
 
     void createDescriptorPool(){
-        std::array<VkDescriptorPoolSize, 2> poolSizes{};
+        std::array<VkDescriptorPoolSize, 3> poolSizes{};
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
-        poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
+        poolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        poolSizes[2].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
 
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -556,22 +604,40 @@ private:
         }
     }
 
+    void createPoolBuffers() {
+        VkDeviceSize bufferSize = poolSize;
+
+        createBuffer(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, poolBuffer, poolBuffersMemory);
+    }
+
+    void uploadTreePool(){
+        void* data;
+        vkMapMemory(device, poolBuffersMemory, 0, poolSize, 0, &data);
+        memcpy(data, treePool, poolSize);
+        vkUnmapMemory(device, poolBuffersMemory);
+        free(treePool);
+    }
+
     void createDescriptorSetLayout() {
         VkDescriptorSetLayoutBinding uboLayoutBinding{};
         uboLayoutBinding.binding = 0;
         uboLayoutBinding.descriptorCount = 1;
         uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uboLayoutBinding.pImmutableSamplers = nullptr;
         uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
+        VkDescriptorSetLayoutBinding poolLayoutBinding{};
+        poolLayoutBinding.binding = 1;
+        poolLayoutBinding.descriptorCount = 1;
+        poolLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
         VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-        samplerLayoutBinding.binding = 1;
+        samplerLayoutBinding.binding = 2;
         samplerLayoutBinding.descriptorCount = 1;
         samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        samplerLayoutBinding.pImmutableSamplers = nullptr;
         samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
-        std::array<VkDescriptorSetLayoutBinding, 2> bindings = {uboLayoutBinding, samplerLayoutBinding};
+        std::array<VkDescriptorSetLayoutBinding, 3> bindings = {uboLayoutBinding, poolLayoutBinding, samplerLayoutBinding};
         VkDescriptorSetLayoutCreateInfo layoutInfo{};
         layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
         layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
@@ -902,7 +968,7 @@ private:
     }
 
     //Create image buffer from file
-    /*void createTextureImage(){
+    void createTextureImage(){
         int texWidth, texHeight, texChannels;
         std::string prefix = SRCDIR;
         std::string path = prefix + '/' + "textures/texture.jpg";
@@ -933,9 +999,9 @@ private:
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
 
-    }*/
+    }
 
-    void createTextureImage() {
+    /*void createTextureImage() {
         size_t texWidth, texHeight;
         texWidth = sizeof(Grid)/sizeof(Cell); //Width is cells per grid, every cell is a pixel
         texHeight = poolSize; //Height is amount of gridarrays
@@ -954,7 +1020,7 @@ private:
         memcpy(data, treePool, static_cast<size_t>(imageSize));
         vkUnmapMemory(device, stagingBufferMemory);
 
-        free(treePool);
+        //free(treePool);
 
         createImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
 
@@ -964,7 +1030,7 @@ private:
 
         vkDestroyBuffer(device, stagingBuffer, nullptr);
         vkFreeMemory(device, stagingBufferMemory, nullptr);
-    }
+    }*/
 
     VkCommandBuffer beginSingleTimeCommands() {
         VkCommandBufferAllocateInfo allocInfo{};
@@ -1768,7 +1834,12 @@ private:
             physicalDevice = devices[use_gpu];
             VkPhysicalDeviceProperties deviceInfo;
             vkGetPhysicalDeviceProperties(physicalDevice, &deviceInfo);
-            std::cout << "Using GPU: " << deviceInfo.deviceName << std::endl;
+            deviceLimits = deviceInfo.limits;
+            Print("Using GPU: " << deviceInfo.deviceName);
+
+            Print("maxUniformBufferRange: " << deviceLimits.maxUniformBufferRange);
+            Print("maxImageDimension2D: " << deviceLimits.maxImageDimension2D);
+            Print("maxStorageBufferRange: " << deviceLimits.maxStorageBufferRange);
         }
 
         if (physicalDevice == VK_NULL_HANDLE) {
