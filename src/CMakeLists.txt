@@ -14,15 +14,18 @@ add_executable(octest octest.cpp octree.h)
 
 if(MSVC)
 	#set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS} /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup")
+	file(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/shaders")
 	add_custom_command(
 		TARGET ${BIN_NAME} PRE_BUILD
-		COMMAND compile.bat
-		WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/shaders
+		COMMAND ${PROJECT_SOURCE_DIR}/shaders/compile.bat ${PROJECT_SOURCE_DIR}/shaders
+		WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/shaders"
 	)
 else()
-	add_custom_command(
-		TARGET ${BIN_NAME} PRE_BUILD
-		COMMAND ${PROJECT_SOURCE_DIR}/shaders/compile.sh
-		WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/shaders
+	file(MAKE_DIRECTORY "${PROJECT_BINARY_DIR}/shaders")
+	add_custom_target(
+		compileShaders
+		COMMAND ${PROJECT_SOURCE_DIR}/shaders/compile.sh ${PROJECT_SOURCE_DIR}/shaders
+		WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/shaders"
 	)
+	add_dependencies(${BIN_NAME} compileShaders)
 endif()

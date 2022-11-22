@@ -1218,8 +1218,8 @@ private:
     }
     
     void createGraphicsPipeline() {
-        VkShaderModule vertShaderModule = createShaderModule("shaders/voxeltrace.vert.spv");
-        VkShaderModule fragShaderModule = createShaderModule("shaders/voxeltrace.frag.spv");
+        VkShaderModule vertShaderModule = createShaderModule("../shaders/voxeltrace.vert.spv");
+        VkShaderModule fragShaderModule = createShaderModule("../shaders/voxeltrace.frag.spv");
 
         VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
         vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -1350,9 +1350,7 @@ private:
     }
 
     VkShaderModule createShaderModule(std::string filename) {
-        std::string prefix = SRCDIR;
-        std::string path = prefix + '/' + filename;
-        auto code = readFile(path);
+        auto code = readFile(filename);
         VkShaderModuleCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         createInfo.codeSize = code.size();

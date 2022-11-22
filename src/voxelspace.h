@@ -138,7 +138,7 @@ public:
     }
 
 
-    bool intersect(Ray const& ray, HitInfo &out) {        
+    bool intersect(Ray const& ray, HitInfo &out){        
         float eps = 1e-4f;
         Ray r = ray;
         out.depth = 0;
@@ -153,6 +153,7 @@ public:
             r.origin += r.direction * (t + eps);
             if (!try_point_to_octree_index(r.origin, oct_index)) return false;
         }
+        
 
         OcTreeResult<T> result;
         bool voxel_hit = octree.get(oct_index.x, oct_index.y, oct_index.z, result);
