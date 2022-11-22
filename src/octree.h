@@ -4,6 +4,7 @@
 #include <list>
 #include <queue>
 #include <stdexcept>
+#include <cstring>
 
 #include "helpers.hpp"
 
@@ -88,32 +89,32 @@ class OcTree {
         size_t idx;
         Cell* parent;
     };
-
-    template <typename D>
-    Cell toPayload(D data) {
-        throw std::invalid_argument("No flattening implementation for template type.");
-    }
-
-    template <>
+    
+    template<typename fake>
     Cell toPayload(Voxel data) {
         return Cell(glm::u8vec3(data.albedo * 255.0f), 1);
     }
-
-    template <>
+    
+    template<typename fake>
     Cell toPayload(int data) {
         return Cell{(uint8)(data),  // encode data in cell
                     (uint8)(data),
                     (uint8)(data),
                     1};
     }
-
-    template <>
+    template<typename fake>
     Cell toPayload(float data) {
         return Cell{(uint8)(data * 255.0),  // encode data in cell
                     (uint8)(data * 255.0),
                     (uint8)(data * 255.0),
                     1};
     }
+
+    template <typename D, typename fake = void>
+    Cell toPayload(D data) {
+        throw std::invalid_argument("No flattening implementation for template type.");
+    }
+
 
     void flattenNodes(std::list<Grid>& pool,
                       std::queue<qElem>& queue) {
@@ -226,7 +227,7 @@ public:
         {
             int i = 0;
             for (Grid grid : pool) {
-                memcpy(&data[i + offset], &grid, sizeof(Grid));
+                std::memcpy(&data[i + offset], &grid, sizeof(Grid));
                 i += sizeof(Grid) / sizeof(uint8);
             }
         }

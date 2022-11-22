@@ -266,7 +266,7 @@ private:
         //model = Scene::noise_model(2, -.2f, 1.0f);
         uint depth = 2;
         uint range = 1 << (depth+1);
-        model = Scene::noise_model(3, -0.2, 1.0);
+        model = Scene::noise_model(3, 0.2, 1.0);
         //model = new VoxelSpace<Voxel>(BBox{0,1,0,1,0,1}, depth);
         /*for (int i = 0; i < range; i++) {
             for (int j = 0; j < range; j++) {

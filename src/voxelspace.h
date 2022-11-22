@@ -131,8 +131,8 @@ public:
             tmin = tmax;
             tmax = tmp;
         };
-        t = max(tmin.x, max(tmin.y, tmin.z));
-        float tmax_ = min(tmax.x, min(tmax.y, tmax.z));
+        t = fmax(tmin.x, fmax(tmin.y, tmin.z));
+        float tmax_ = fmin(tmax.x, fmin(tmax.y, tmax.z));
         
         return (t < tmax_ && t > 0);
     }
