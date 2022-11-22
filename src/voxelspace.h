@@ -1,7 +1,7 @@
 #pragma once
 
 #include "octree.h"
-#include "3d_prims.h"
+#include "helpers.hpp"
 #include <iostream>
 #include <cmath>
 

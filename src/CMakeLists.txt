@@ -1,11 +1,11 @@
 
 
 add_library(imgui ${IMGUI_SRC})
-add_library(scene scene.cpp scene.h 3d_prims.h voxelspace.h)
+add_library(scene scene.cpp scene.h helpers.hpp voxelspace.h)
 target_include_directories(scene PRIVATE "${PROJECT_SOURCE_DIR}/include")
 target_link_libraries(scene)
 
-add_executable(${BIN_NAME} main.cpp scene.h octree.h voxelspace.h 3d_prims.h)
+add_executable(${BIN_NAME} main.cpp scene.h octree.h voxelspace.h helpers.hpp)
 target_link_libraries(${BIN_NAME} PRIVATE imgui scene glfw Vulkan::Vulkan)
 target_include_directories(${BIN_NAME} PRIVATE "${PROJECT_SOURCE_DIR}/include")
 

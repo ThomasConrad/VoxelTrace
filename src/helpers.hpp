@@ -3,7 +3,6 @@
 #include <glm/fwd.hpp>
 #include <math.h>
 
-
 typedef unsigned int uint;
 typedef unsigned char uint8;
 struct BBox {

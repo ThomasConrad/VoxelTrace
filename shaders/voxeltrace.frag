@@ -9,18 +9,21 @@ struct Grid {
     Cell cells[8];
 };
 
+
+
 layout(binding = 1) uniform VoxelVolume{
+    vec4 transform; //Placement it in the real world
     Grid grids[];
 } pool;
 
 
-layout(binding = 2) uniform sampler2D image;
+layout(binding = 2) uniform sampler2D image; //Can be used for voxel textures
 
 layout(location = 0) in vec3 pos;
 
 layout(location = 0) out vec4 outColor;
 
-bool traceNode(vec3 orig, vec3 dir, inout float t, vec3 nodeMin, int size){
+bool traceNode(vec3 orig, vec3 dir, inout float t, vec3 nodeMin, float size){
     vec3 invdir = 1.0/dir;
     vec3 t0 = (nodeMin-orig)*invdir;
     vec3 nodeMax = nodeMin-vec3(size);
@@ -34,13 +37,19 @@ bool traceNode(vec3 orig, vec3 dir, inout float t, vec3 nodeMin, int size){
     
     return (t < tmax_ && t > 0);
 }
+/*
+void traceIntoVolume(vec3 orig, vec3 dir, Grid grid, uint depth){
+    traceNode(orig, dir, t, nodeMin, size);
+}*/
 
 void main() {
     vec3 orig = vec3(0.0, 0.0, 1.0);
     vec3 dir = normalize(pos - orig); //Ray direction shooting from orig to a plane at z=0 (x,y)=[-1,1]x[-1,1]
     float t;
-    vec3 nodeMin = vec3(0.0, 0.0, -3.0);
-    int size = 1;
+    vec3 nodeMin = pool.transform.xyz;
+    float size = pool.transform.w;
+    //traceIntoVolume(orig, dir, pool.grids[0], 0);
+
     if (traceNode(orig, dir, t, nodeMin, size)){
         outColor.xyz = vec3(1.0,0.0,0.0);
     }

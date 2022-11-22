@@ -264,10 +264,11 @@ private:
     void initOctree(){
         std::cout << "Initializing octree\n";
         //model = Scene::noise_model(2, -.2f, 1.0f);
-        uint depth = 7;
+        uint depth = 2;
         uint range = 1 << (depth+1);
-        model = new VoxelSpace<Voxel>(BBox{0,1,0,1,0,1}, depth);
-        for (int i = 0; i < range; i++) {
+        model = Scene::noise_model(3, -0.2, 1.0);
+        //model = new VoxelSpace<Voxel>(BBox{0,1,0,1,0,1}, depth);
+        /*for (int i = 0; i < range; i++) {
             for (int j = 0; j < range; j++) {
                 for (int k = 0; k < range; k++) {
                     glm::vec3 coord = glm::vec3(i,j,k)/(float)range;
@@ -275,16 +276,20 @@ private:
                 }
             }
         }
-
+        model->place_voxel_at_point(glm::vec3(.5f), Voxel());
         Voxel out;
-        if (model->try_get_voxel_at_point(glm::vec3(0.f), out)) {
+        if (model->try_get_voxel_at_point(glm::vec3(.5f), out)) {
             std::cout << "Found the voxel " << glm::to_string(out.albedo) << std::endl;
-        }
+        }*/
         OcTree<Voxel> tree = model->octree;
-        treePool = tree.flatten(poolSize);
-        treePool[0] = 255;
-        treePool[1] = 0;
-        treePool[2] = 0;
+        int offset = sizeof(glm::vec4);
+        //assert(model->bounding_box.size().x == model->bounding_box.size().y && model->bounding_box.size().y == model->bounding_box.size().z); //Need cubic bbox
+        treePool = tree.flatten(poolSize, offset);
+        glm::vec4 bbox = glm::vec4(model->bounding_box.min, model->bounding_box.size().x);
+        memcpy(treePool, &bbox, sizeof(glm::vec4));
+        treePool[0 + offset] = 255;
+        treePool[1+offset] = 0;
+        treePool[2+offset] = 0;
         /*for (int i = 0; i < poolSize; i++) {
             Println((int)treePool[i] << " ");
             if (i % 4 == 3)
@@ -1835,11 +1840,10 @@ private:
             VkPhysicalDeviceProperties deviceInfo;
             vkGetPhysicalDeviceProperties(physicalDevice, &deviceInfo);
             deviceLimits = deviceInfo.limits;
-            Print("Using GPU: " << deviceInfo.deviceName);
-
-            Print("maxUniformBufferRange: " << deviceLimits.maxUniformBufferRange);
-            Print("maxImageDimension2D: " << deviceLimits.maxImageDimension2D);
-            Print("maxStorageBufferRange: " << deviceLimits.maxStorageBufferRange);
+            std::cout << "Using GPU: " << deviceInfo.deviceName << std::endl;
+            std::cout << "maxUniformBufferRange: " << deviceLimits.maxUniformBufferRange << std::endl;
+            std::cout << "maxImageDimension2D: " << deviceLimits.maxImageDimension2D << std::endl;
+            std::cout << "maxStorageBufferRange: " << deviceLimits.maxStorageBufferRange << std::endl;
         }
 
         if (physicalDevice == VK_NULL_HANDLE) {
