@@ -21,6 +21,7 @@ typedef struct Cell {
     uint8 data[4];  // 24 bit color/pointer + 8 bit data
 	Cell() : data{0,0,0,0}{}
 	Cell(glm::u8vec3 val, uint8 depth) : data{val.x, val.y, val.z, depth}{	}
+    Cell(uint8 a,uint8 b,uint8 c,uint8 d) : data{a,b,c,d}{	}
 } Cell;
 
 typedef struct Grid {

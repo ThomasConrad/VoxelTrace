@@ -29,9 +29,7 @@
 
 #include "voxelspace.h"
 #include "scene.h"
-
-#define Print(x) std::cout << x << std::endl;
-#define Println(x) std::cout << x;
+#include "IOHandler.hpp"
 
 const uint32_t WIDTH = 1920;
 const uint32_t HEIGHT = 1080;
@@ -114,20 +112,20 @@ struct Vertex {
 };
 
 struct UniformBufferObject {
-    alignas(16) glm::mat4 model;
-    alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 proj;
+    alignas(16) glm::mat4 ONB;
+    alignas(16) glm::vec4 eye;
+    alignas(16) float ratio;
 };
 
 const std::vector<Vertex> vertices = {
-    {{-1.0f, -1.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-    {{1.0f, -1.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-    {{1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-    {{-1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}
+    {{-1.0f, -1.0f}, {1.0f, 0.0f, 0.0f}, {-1.0f, 1.0f}}, //Y coordinate is flipped!
+    {{1.0f, -1.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
+    {{1.0f, 1.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, -1.0f}},
+    {{-1.0f, 1.0f}, {1.0f, 1.0f, 1.0f}, {-1.0f, -1.0f}}
 };
 
 const std::vector<uint16_t> indices = {
-    0, 1, 2, 2, 3, 0
+    0, 2, 1, 3, 2, 0
 };
 
 
@@ -136,6 +134,7 @@ class VoxelTracer {
 public:
     void run() {
         initOctree();
+        initCallbacks();
         initWindow();
         initVulkan();
         initImGui();
@@ -207,21 +206,22 @@ private:
 
     uint8* treePool;
     size_t poolSize;
+    IOHandler* ioHandler;
 
     bool framebufferResized = false;
     bool isImGuiWindowCreated = false;
 
-    VoxelSpace<Voxel>* model;
 
     void initWindow() {
         glfwInit();
 
         glfwWindowHint(GLFW_CLIENT_API,GLFW_NO_API);
-
+        
         window = glfwCreateWindow(WIDTH,HEIGHT,"VoxelTracer", nullptr,nullptr);
         glfwSetWindowUserPointer(window, this);
         glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
         glfwSetCursorPosCallback(window, cursor_position_callback);
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
@@ -230,7 +230,20 @@ private:
     }
 
     static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
-        //std::cout << xpos << "," << ypos << "\n";
+        auto app = reinterpret_cast<VoxelTracer*>(glfwGetWindowUserPointer(window));
+        app->ioHandler->Cursor_Pos(xpos, ypos);
+        std::cout << xpos << "," << ypos << "\n";
+        
+    }
+
+    static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+    {
+
+    }
+
+    static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+    {
+
     }
 
 
@@ -261,13 +274,18 @@ private:
         createSyncObjects();
     }
 
+    void initCallbacks(){
+        ioHandler = new IOHandler();
+    }
+
     void initOctree(){
         std::cout << "Initializing octree\n";
+        VoxelSpace<Voxel>* model;
         //model = Scene::noise_model(2, -.2f, 1.0f);
         uint depth = 2;
         uint range = 1 << (depth+1);
-        model = Scene::noise_model(3, 0.2, 1.0);
-        //model = new VoxelSpace<Voxel>(BBox{0,1,0,1,0,1}, depth);
+        //model = Scene::noise_model(3, 0.2, 1.0);
+        model = new VoxelSpace<Voxel>(BBox(-1,0), depth);
         /*for (int i = 0; i < range; i++) {
             for (int j = 0; j < range; j++) {
                 for (int k = 0; k < range; k++) {
@@ -275,12 +293,12 @@ private:
                     model->place_voxel_at_point(coord, Voxel());
                 }
             }
-        }
+        }*/
         model->place_voxel_at_point(glm::vec3(.5f), Voxel());
         Voxel out;
         if (model->try_get_voxel_at_point(glm::vec3(.5f), out)) {
             std::cout << "Found the voxel " << glm::to_string(out.albedo) << std::endl;
-        }*/
+        }
         OcTree<Voxel> tree = model->octree;
         int offset = sizeof(glm::vec4);
         //assert(model->bounding_box.size().x == model->bounding_box.size().y && model->bounding_box.size().y == model->bounding_box.size().z); //Need cubic bbox
@@ -411,6 +429,9 @@ private:
         //Cleanup the octree
 ;        cleanupOctree();
         
+        //Clean callback handler
+        free(ioHandler);
+
         // Cleanup GLFW
         glfwDestroyWindow(window);
         glfwTerminate();
@@ -628,7 +649,7 @@ private:
         uboLayoutBinding.binding = 0;
         uboLayoutBinding.descriptorCount = 1;
         uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
 
         VkDescriptorSetLayoutBinding poolLayoutBinding{};
         poolLayoutBinding.binding = 1;
@@ -1790,11 +1811,14 @@ private:
         auto currentTime = std::chrono::high_resolution_clock::now();
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
         //float time = 0;
-        ubo.model = glm::mat4(1.0f);
-        ubo.view = glm::mat4(1.0f);
-        ubo.view[0][0] = swapChainExtent.width / (float)swapChainExtent.height;
-        ubo.proj = glm::mat4(1.0f);
-        ubo.proj[1][1] *= -1;
+        //ubo.ONB = glm::mat4(1.0f); //X = LEFT, Y = UP, Z = BACK
+        ubo.ONB = ioHandler->ONB;
+        //ubo.view = glm::rotate(glm::mat4(1.0f),time,glm::vec3(0.f,1.f,0.f));
+
+        ubo.ratio = swapChainExtent.width / (float)swapChainExtent.height;
+        float fov = 90;
+        float dist = 1.0f/tan(fov/2.0f);
+        ubo.eye = glm::vec4(0.0,0.0,1.0,dist);
 
         void* data;
         vkMapMemory(device, uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);

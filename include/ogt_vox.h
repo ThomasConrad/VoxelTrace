@@ -2473,7 +2473,7 @@
             _vox_sprintf(color_string, sizeof(color_string), "%u %u %u", scene->layers[i].color.r, scene->layers[i].color.g, scene->layers[i].color.b);
             const char* layer_name_string = scene->layers[i].name;
             const char* hidden_string = scene->layers[i].hidden ? "1" : NULL;
-            uint32_t layer_dict_keyvalue_count = (layer_name_string ? 1 : 0) + (hidden_string ? 1 : 0) + (color_string ? 1 : 0);
+            uint32_t layer_dict_keyvalue_count = (layer_name_string ? 1 : 0) + (hidden_string ? 1 : 0) + 1;//(color_string ? 1 : 0);
 
             uint32_t offset_of_chunk_header = _vox_file_get_offset(fp);
 
