@@ -10,7 +10,7 @@
 
 VoxelSpace<Voxel>* Scene::noise_model(uint levels, float threshold, float scale) {
     uint size = 1 << levels;
-    VoxelSpace<Voxel>* model = new VoxelSpace<Voxel>(BBox{0.0, (float)size, 0.0, (float)size, 0.0, (float)size}, levels - 1);
+    VoxelSpace<Voxel>* model = new VoxelSpace<Voxel>(BBox{0.0f, (float)size, 0.0f, (float)size, 0.0f, (float)size}, levels - 1);
     const siv::PerlinNoise::seed_type seed = rand();
 	const siv::PerlinNoise perlin{seed};
     for (float i = 0; i < size; i++) {
@@ -68,7 +68,7 @@ VoxelSpace<Voxel>* Scene::magicaVoxel(std::string file_name) {
 
                 glm::vec3 c(color.r, color.g, color.b);
                 c /= 255.0f;
-                glm::vec3 loc = glm::vec3(transform*glm::vec4{i,j,k,1.0});
+                glm::vec3 loc = glm::vec3(transform*glm::vec4{i,j,k,1.0f});
                 loc = glm::vec3(loc.x, loc.z, loc.y);
                 if (type == 3) //emmisive material
                     voxels.push_back(std::make_pair(loc,Voxel(c,100.0f))); //Swap because of different coordinate system

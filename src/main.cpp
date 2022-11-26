@@ -16,7 +16,6 @@
 #include <chrono>
 
 #define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEFAULT_ALIGNED_GENTYPES
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
@@ -28,7 +27,6 @@
 #include <imgui/imgui_impl_vulkan.h>
 
 #include "voxelspace.h"
-#include "scene.h"
 #include "IOHandler.hpp"
 
 const uint32_t WIDTH = 1920;
@@ -180,6 +178,7 @@ private:
 
     std::vector<VkBuffer> uniformBuffers;
     std::vector<VkDeviceMemory> uniformBuffersMemory;
+    std::vector<void*> uniformBuffersMappings;
 
     VkBuffer poolBuffer;
     VkDeviceMemory poolBuffersMemory;
@@ -232,7 +231,6 @@ private:
     static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
         auto app = reinterpret_cast<VoxelTracer*>(glfwGetWindowUserPointer(window));
         app->ioHandler->Cursor_Pos(xpos, ypos);
-        std::cout << xpos << "," << ypos << "\n";
         
     }
 
@@ -281,10 +279,8 @@ private:
     void initOctree(){
         std::cout << "Initializing octree\n";
         VoxelSpace<Voxel>* model;
-        //model = Scene::noise_model(2, -.2f, 1.0f);
         uint depth = 2;
         uint range = 1 << (depth+1);
-        //model = Scene::noise_model(3, 0.2, 1.0);
         model = new VoxelSpace<Voxel>(BBox(-1,0), depth);
         /*for (int i = 0; i < range; i++) {
             for (int j = 0; j < range; j++) {
@@ -294,9 +290,9 @@ private:
                 }
             }
         }*/
-        model->place_voxel_at_point(glm::vec3(.5f), Voxel());
+        model->place_voxel_at_point(glm::vec3(-.5f), Voxel());
         Voxel out;
-        if (model->try_get_voxel_at_point(glm::vec3(.5f), out)) {
+        if (model->try_get_voxel_at_point(glm::vec3(-.5f), out)) {
             std::cout << "Found the voxel " << glm::to_string(out.albedo) << std::endl;
         }
         OcTree<Voxel> tree = model->octree;
@@ -388,6 +384,7 @@ private:
         vkFreeMemory(device, poolBuffersMemory, nullptr);
         //Destroy uniforms
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            vkUnmapMemory(device, uniformBuffersMemory[i]);
             vkDestroyBuffer(device, uniformBuffers[i], nullptr);
             vkFreeMemory(device, uniformBuffersMemory[i], nullptr);
         }
@@ -624,9 +621,11 @@ private:
 
         uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
         uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+        uniformBuffersMappings.resize(MAX_FRAMES_IN_FLIGHT);
 
         for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             createBuffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, uniformBuffers[i], uniformBuffersMemory[i]);
+            vkMapMemory(device, uniformBuffersMemory[i], 0, sizeof(UniformBufferObject), 0, &uniformBuffersMappings[i]);
         }
     }
 
@@ -1816,18 +1815,12 @@ private:
         //ubo.view = glm::rotate(glm::mat4(1.0f),time,glm::vec3(0.f,1.f,0.f));
 
         ubo.ratio = swapChainExtent.width / (float)swapChainExtent.height;
-        float fov = 90;
+        float fov = 45;
         float dist = 1.0f/tan(fov/2.0f);
-        ubo.eye = glm::vec4(0.0,0.0,1.0,dist);
+        ubo.eye = glm::vec4(0.0f,0.0f,1.0f,dist);
 
-        void* data;
-        vkMapMemory(device, uniformBuffersMemory[currentImage], 0, sizeof(ubo), 0, &data);
-            memcpy(data, &ubo, sizeof(ubo));
-        vkUnmapMemory(device, uniformBuffersMemory[currentImage]);
-        
+        memcpy(uniformBuffersMappings[currentImage], &ubo, sizeof(ubo));
     }
-
-    
 
     void pickPhysicalDevice() {
         
@@ -1954,7 +1947,8 @@ private:
         std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
         if (!file.is_open()) {
-            throw std::runtime_error("failed to open file!");
+            std::cout << filename << std::endl;
+            throw std::runtime_error("failed to open file !");
         }
         size_t fileSize = (size_t) file.tellg();
         std::vector<char> buffer(fileSize);

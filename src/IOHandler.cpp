@@ -2,11 +2,9 @@
 #include <GLFW/glfw3.h> //For glfw keys
 #include <glm/gtc/matrix_transform.hpp>
 
-IOHandler::IOHandler() 
+IOHandler::IOHandler() : ONB(1.0f), eye(1.0f)
 {
     started = false;
-    eye = glm::vec3(0.0,0.0,0.0);
-    ONB = glm::mat4(1.0);
 }
 
 IOHandler::~IOHandler()
