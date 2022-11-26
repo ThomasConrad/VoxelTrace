@@ -36,7 +36,12 @@ VoxelSpace<Voxel>* Scene::noise_model(uint levels, float threshold, float scale)
 
 VoxelSpace<Voxel>* Scene::magicaVoxel(std::string file_name) {
     //load file into buffer
-    FILE* fp = fopen(file_name.c_str(), "rb");
+    FILE* fp;
+    errno_t err;
+   
+    if ((err = fopen_s(&fp, file_name.c_str(), "r")) != 0){
+        throw std::runtime_error("cannot open file!");
+    }
     fseek(fp, 0, SEEK_END);
     const uint32_t size = ftell(fp);
     fseek(fp, 0, SEEK_SET);

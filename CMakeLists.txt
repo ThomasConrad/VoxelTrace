@@ -9,7 +9,7 @@ file(GLOB IMGUI_SRC "${PROJECT_SOURCE_DIR}/include/imgui/*.cpp")
 add_definitions( -DSRCDIR="${PROJECT_SOURCE_DIR}")
 
 if(WIN32)
-    include("C:/src/vcpkg/scripts/buildsystems/vcpkg.cmake")
+    #include("C:/src/vcpkg/scripts/buildsystems/vcpkg.cmake")
     set(VCPKG_TARGET_TRIPLET "x64-windows")
     message(STATUS "Target triplet for is " ${VCPKG_TARGET_TRIPLET})
     find_package(glm CONFIG REQUIRED)
