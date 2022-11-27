@@ -6,5 +6,7 @@ for filepath in $1/*.{'frag','vert','tesc','tese','geom','comp'}; do
     printf "[Compiling]: $file \n"
     if glslc $filepath -o $file.spv; then
         md5sum $filepath > $file.md5
+    else
+        read -p prompt
     fi
 done

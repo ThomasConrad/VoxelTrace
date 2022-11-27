@@ -28,6 +28,7 @@
 
 #include "voxelspace.h"
 #include "IOHandler.hpp"
+#include "scene.h"
 
 const uint32_t WIDTH = 1920;
 const uint32_t HEIGHT = 1080;
@@ -112,7 +113,7 @@ struct Vertex {
 struct UniformBufferObject {
     alignas(16) glm::mat4 ONB;
     alignas(16) glm::vec4 eye;
-    alignas(16) float ratio;
+    float ratio;
 };
 
 const std::vector<Vertex> vertices = {
@@ -132,7 +133,6 @@ class VoxelTracer {
 public:
     void run() {
         initOctree();
-        initCallbacks();
         initWindow();
         initVulkan();
         initImGui();
@@ -206,6 +206,7 @@ private:
     uint8* treePool;
     size_t poolSize;
     IOHandler* ioHandler;
+    UniformBufferObject ubo{};
 
     bool framebufferResized = false;
     bool isImGuiWindowCreated = false;
@@ -220,6 +221,7 @@ private:
         glfwSetWindowUserPointer(window, this);
         glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
         glfwSetCursorPosCallback(window, cursor_position_callback);
+        glfwSetKeyCallback(window, key_callback);
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
 
@@ -231,7 +233,6 @@ private:
     static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
         auto app = reinterpret_cast<VoxelTracer*>(glfwGetWindowUserPointer(window));
         app->ioHandler->Cursor_Pos(xpos, ypos);
-        
     }
 
     static void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
@@ -241,7 +242,8 @@ private:
 
     static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
     {
-
+        auto app = reinterpret_cast<VoxelTracer*>(glfwGetWindowUserPointer(window));
+        app->ioHandler->Key(key, scancode, action, mods);
     }
 
 
@@ -272,16 +274,13 @@ private:
         createSyncObjects();
     }
 
-    void initCallbacks(){
-        ioHandler = new IOHandler();
-    }
-
     void initOctree(){
         std::cout << "Initializing octree\n";
         VoxelSpace<Voxel>* model;
         uint depth = 2;
         uint range = 1 << (depth+1);
-        model = new VoxelSpace<Voxel>(BBox(-1,0), depth);
+        //model = Scene::noise_model(2, -0.2, 1);
+        model = new VoxelSpace<Voxel>(BBox(-.5, .5), depth);
         /*for (int i = 0; i < range; i++) {
             for (int j = 0; j < range; j++) {
                 for (int k = 0; k < range; k++) {
@@ -290,9 +289,9 @@ private:
                 }
             }
         }*/
-        model->place_voxel_at_point(glm::vec3(-.5f), Voxel());
+        model->place_voxel_at_point(glm::vec3(0.0f), Voxel());
         Voxel out;
-        if (model->try_get_voxel_at_point(glm::vec3(-.5f), out)) {
+        if (model->try_get_voxel_at_point(glm::vec3(-.0f), out)) {
             std::cout << "Found the voxel " << glm::to_string(out.albedo) << std::endl;
         }
         OcTree<Voxel> tree = model->octree;
@@ -311,6 +310,9 @@ private:
             if (i % (4 * 9) == 4 * 9 - 1)
                 Print("");
         }*/
+        
+        ioHandler = new IOHandler(model->bounding_box.size().x, &ubo.ONB, &ubo.eye, 45);
+
         free(model);
         return;
     }
@@ -427,7 +429,7 @@ private:
 ;        cleanupOctree();
         
         //Clean callback handler
-        free(ioHandler);
+        delete ioHandler;
 
         // Cleanup GLFW
         glfwDestroyWindow(window);
@@ -640,7 +642,7 @@ private:
         vkMapMemory(device, poolBuffersMemory, 0, poolSize, 0, &data);
         memcpy(data, treePool, poolSize);
         vkUnmapMemory(device, poolBuffersMemory);
-        free(treePool);
+        delete treePool;
     }
 
     void createDescriptorSetLayout() {
@@ -1804,20 +1806,15 @@ private:
     }
 
     void updateBuffers(uint32_t currentImage) {
-        UniformBufferObject ubo{};
+        
         static auto startTime = std::chrono::high_resolution_clock::now();
 
         auto currentTime = std::chrono::high_resolution_clock::now();
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-        //float time = 0;
-        //ubo.ONB = glm::mat4(1.0f); //X = LEFT, Y = UP, Z = BACK
-        ubo.ONB = ioHandler->ONB;
-        //ubo.view = glm::rotate(glm::mat4(1.0f),time,glm::vec3(0.f,1.f,0.f));
 
+        ioHandler->Tick(time);
         ubo.ratio = swapChainExtent.width / (float)swapChainExtent.height;
-        float fov = 45;
-        float dist = 1.0f/tan(fov/2.0f);
-        ubo.eye = glm::vec4(0.0f,0.0f,1.0f,dist);
+        
 
         memcpy(uniformBuffersMappings[currentImage], &ubo, sizeof(ubo));
     }

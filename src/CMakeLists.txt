@@ -19,6 +19,7 @@ if(MSVC)
 		TARGET ${BIN_NAME} PRE_BUILD
 		COMMAND ${PROJECT_SOURCE_DIR}/shaders/compile.sh ${PROJECT_SOURCE_DIR}/shaders
 		WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/shaders"
+        DEPENDS "shaders/voxeltrace.frag" "shaders/voxeltrace.frag"
 	)
 else()
 	add_custom_target(
@@ -26,5 +27,6 @@ else()
 		COMMAND ${PROJECT_SOURCE_DIR}/shaders/compile.sh ${PROJECT_SOURCE_DIR}/shaders
 		WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/shaders"
 	)
+    #add_dependencies(compileShaders "shaders/voxeltrace.frag" "shaders/voxeltrace.frag")
 	add_dependencies(${BIN_NAME} compileShaders)
 endif()
