@@ -2,10 +2,9 @@
 #include <iostream>
 #include <GLFW/glfw3.h> //For glfw keys
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/quaternion.hpp>
 #include <unordered_map>
 
-#define scale 1e-3f
+#define scale 2.5f
 
 enum keyNames {
     MOVE_FORWARD = GLFW_KEY_W,
@@ -58,7 +57,7 @@ void IOHandler::Tick(float time) {
 
     *eye += scale * change * time * length,0.0;
     float dAngle = (float)keys[ROTATE_CW] * time - (float)keys[ROTATE_CCW] * time;
-    rot = glm::rotate(rot, scale * dAngle, -glm::vec3((*ONB)[2]));
+    rot = glm::rotate(rot, scale * dAngle, glm::vec3(0.0, 0.0, -1.0));
     *ONB = glm::mat4_cast(rot);
     //*ONB = glm::rotate(*ONB, scale*dAngle, );
 }
@@ -72,7 +71,7 @@ void IOHandler::Cursor_Pos(double xpos, double ypos){
         return;
     }
     glm::vec2 pos(xpos,ypos);
-    glm::vec2 delta = (lastMouse-pos)*scale;
+    glm::vec2 delta = (lastMouse-pos)*1e-3f;
     if (glm::dot(delta,delta) < 1000){
         //*ONB = glm::rotate(*ONB, delta.x, glm::vec3(0.0,1.0,0.0));
         rot = glm::rotate(rot, delta.x, glm::vec3(0.0, 1.0, 0.0));

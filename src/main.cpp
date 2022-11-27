@@ -207,7 +207,7 @@ private:
     size_t poolSize;
     IOHandler* ioHandler;
     UniformBufferObject ubo{};
-
+    std::chrono::steady_clock::time_point lastTime = std::chrono::high_resolution_clock::now();
     bool framebufferResized = false;
     bool isImGuiWindowCreated = false;
 
@@ -1806,12 +1806,9 @@ private:
     }
 
     void updateBuffers(uint32_t currentImage) {
-        
-        static auto startTime = std::chrono::high_resolution_clock::now();
-
         auto currentTime = std::chrono::high_resolution_clock::now();
-        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
+        float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
+        lastTime = currentTime;
         ioHandler->Tick(time);
         ubo.ratio = swapChainExtent.width / (float)swapChainExtent.height;
         
