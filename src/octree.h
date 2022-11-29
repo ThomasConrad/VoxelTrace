@@ -129,9 +129,9 @@ class OcTree {
         if (parent != NULL) {
             size_t offset = poolSize - parent_idx;
             assert(offset < 16'777'215); //Max 24 bit size
-            glm::u8vec3 idx = glm::u8vec3((offset & 0x000000FF) >> 0,
+            glm::u8vec3 idx = glm::u8vec3((offset & 0x00FF0000) >> 16,
                                           (offset & 0x0000FF00) >> 8,
-                                          (offset & 0x00FF0000) >> 16);
+                                          (offset & 0x000000FF) >> 0 );
             *parent = Cell(idx, 2);  // encode offset in cell
         }
         pool.push_back(Grid());  // Add a new grid array to the pool
@@ -232,7 +232,7 @@ public:
                 i += sizeof(Grid) / sizeof(uint8);
             }
         }
-        size = pool.size() * sizeof(Grid);  // size of pool in bytes
+        size = pool.size() * sizeof(Grid)+offset;  // size of pool in bytes
 
         return data;
     }

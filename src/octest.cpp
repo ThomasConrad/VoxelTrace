@@ -8,24 +8,24 @@
 int main() {
     Print("Hello test");
 
-    OcTree<int> tree(2);
+    OcTree<Voxel> tree(2);
 
-    tree.insert(0, 0, 0, 1);
-    tree.insert(1, 1, 2, 5);
-    tree.insert(4, 4, 2, 3);
+    tree.insert(0, 0, 0, Voxel());
+    //tree.insert(1, 1, 2, 5);
+    //tree.insert(4, 4, 2, 3);
 
-    OcTreeResult<int> res;
+    OcTreeResult<Voxel> res;
     if (tree.get(0, 0, 0, res))
-        Print(res.item);
+        Print("Yeha");
     size_t size;
-    uint8* data = tree.flatten(size);
+    uint8* data = tree.flatten(size,16);
 
 
     for (int i = 0; i < size; i++) {
         Println((int)data[i] << " ");
-        if (i % 4 == 3)
+        if ((i-16) % 4 == 3)
             Print("");
-        if (i % (4 * 9) == 4 * 9 - 1)
+        if ((i -16) % (4 * 9) == 4 * 9 - 1)
             Print("");
     }
     free(data);

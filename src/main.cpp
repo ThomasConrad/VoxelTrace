@@ -132,8 +132,8 @@ class VoxelTracer {
 
 public:
     void run() {
-        initOctree();
         initWindow();
+        initOctree();
         initVulkan();
         initImGui();
         mainLoop();
@@ -243,6 +243,7 @@ private:
     static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
     {
         auto app = reinterpret_cast<VoxelTracer*>(glfwGetWindowUserPointer(window));
+        
         app->ioHandler->Key(key, scancode, action, mods);
     }
 
@@ -280,7 +281,7 @@ private:
         uint depth = 2;
         uint range = 1 << (depth+1);
         //model = Scene::noise_model(2, -0.2, 1);
-        model = new VoxelSpace<Voxel>(BBox(-.5, .5), depth);
+        model = new VoxelSpace<Voxel>(BBox(0.,1.), depth);
         /*for (int i = 0; i < range; i++) {
             for (int j = 0; j < range; j++) {
                 for (int k = 0; k < range; k++) {
@@ -289,9 +290,11 @@ private:
                 }
             }
         }*/
-        model->place_voxel_at_point(glm::vec3(0.0f), Voxel());
+        model->place_voxel_at_point(glm::vec3(.2f), Voxel());
+        model->place_voxel_at_point(glm::vec3(.8f), Voxel());
+
         Voxel out;
-        if (model->try_get_voxel_at_point(glm::vec3(-.0f), out)) {
+        if (model->try_get_voxel_at_point(glm::vec3(.2f), out)) {
             std::cout << "Found the voxel " << glm::to_string(out.albedo) << std::endl;
         }
         OcTree<Voxel> tree = model->octree;
@@ -304,14 +307,12 @@ private:
         treePool[1+offset] = 0;
         treePool[2+offset] = 0;
         /*for (int i = 0; i < poolSize; i++) {
-            Println((int)treePool[i] << " ");
-            if (i % 4 == 3)
-                Print("");
-            if (i % (4 * 9) == 4 * 9 - 1)
-                Print("");
+            std::cout << (int)treePool[i] << " ";
+            if (i % 4 == 3) 
+                std::cout << std::endl;
         }*/
-        
-        ioHandler = new IOHandler(model->bounding_box.size().x, &ubo.ONB, &ubo.eye, 45);
+
+        ioHandler = new IOHandler(model->bounding_box.size().x, &ubo.ONB, &ubo.eye, 45, window);
 
         free(model);
         return;
@@ -580,7 +581,7 @@ private:
             descriptorWrites[1].dstSet = descriptorSets[i];
             descriptorWrites[1].dstBinding = 1;
             descriptorWrites[1].dstArrayElement = 0;
-            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             descriptorWrites[1].descriptorCount = 1;
             descriptorWrites[1].pBufferInfo = &poolBufferInfo;
 
@@ -654,8 +655,8 @@ private:
 
         VkDescriptorSetLayoutBinding poolLayoutBinding{};
         poolLayoutBinding.binding = 1;
-        poolLayoutBinding.descriptorCount = 1;
-        poolLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        poolLayoutBinding.descriptorCount = uint32_t(poolSize / sizeof(Grid));
+        poolLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         poolLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
         VkDescriptorSetLayoutBinding samplerLayoutBinding{};

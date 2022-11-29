@@ -1,4 +1,5 @@
 #pragma once
+#include <GLFW/glfw3.h>  //For glfw keys
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -10,6 +11,8 @@ private:
     glm::vec2 lastMouse;
     float dist;
     glm::quat rot;
+    GLFWwindow* window;
+
 public:
     bool mouseOn;
     bool keysOn;
@@ -18,7 +21,7 @@ public:
     glm::mat4* ONB;
     float length;
 
-    IOHandler(float length, glm::mat4* ONB, glm::vec4* eye, float fov);
+    IOHandler(float length, glm::mat4* ONB, glm::vec4* eye, float fov, GLFWwindow* window);
     ~IOHandler();
 
     void Cursor_Button();

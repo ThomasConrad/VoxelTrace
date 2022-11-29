@@ -1,6 +1,5 @@
 #include "IOHandler.hpp"
 #include <iostream>
-#include <GLFW/glfw3.h> //For glfw keys
 #include <glm/gtc/matrix_transform.hpp>
 #include <unordered_map>
 
@@ -14,7 +13,9 @@ enum keyNames {
     ROTATE_CCW = GLFW_KEY_Q,
     ROTATE_CW = GLFW_KEY_E,
     MOVE_UPWARDS = GLFW_KEY_LEFT_SHIFT,
-    MOVE_DOWNWARDS = GLFW_KEY_LEFT_CONTROL
+    MOVE_DOWNWARDS = GLFW_KEY_LEFT_CONTROL,
+    QUIT = GLFW_KEY_ESCAPE,
+    SAVE = GLFW_KEY_K
 };
 
 int keysNums[] = {
@@ -25,15 +26,17 @@ int keysNums[] = {
     ROTATE_CCW,
     ROTATE_CW,
     MOVE_UPWARDS,
-    MOVE_DOWNWARDS
+    MOVE_DOWNWARDS,
+    QUIT,
+    SAVE
 };
 
 std::unordered_map<int, bool> keys;
 
-IOHandler::IOHandler(float length, glm::mat4* ONB, glm::vec4* eye, float fov) : length{length}, ONB{ONB}, eye{eye}, fov{ fov }
+IOHandler::IOHandler(float length, glm::mat4* ONB, glm::vec4* eye, float fov, GLFWwindow* window) : length{length}, ONB{ONB}, eye{eye}, fov{ fov }, window{window}
 {
     dist = 1.0f / tan(fov / 2.0f);
-    *eye = glm::vec4(0., 0., 1., dist);
+    *eye = glm::vec4(glm::vec3(.5), dist);
     started = false;
     for (int key : keysNums) {
         keys[key] = false;
@@ -88,6 +91,15 @@ void IOHandler::Key(int key, int scancode, int action, int mods) {
 
     if (keys.contains(key)) {
         keys[key] = action == 0 ? false : true;
+        switch (key)
+        {
+        case QUIT:
+            glfwSetWindowShouldClose(window, action);
+            break;
+        
+        default:
+            break;
+        }
     }
 
 

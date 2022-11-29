@@ -35,6 +35,7 @@ class VoxelSpace {
     static uint bound_start(uint i, uint c) {
         return (i >> c) << c;
     }
+    
     static uint bound_stop(uint i, uint c) {
         return ((i >> c) + 1) << c;
     }
