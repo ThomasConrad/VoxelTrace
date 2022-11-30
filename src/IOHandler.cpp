@@ -101,7 +101,4 @@ void IOHandler::Key(int key, int scancode, int action, int mods) {
             break;
         }
     }
-
-
-    std::cout << key << " " << scancode << " " << action << " " << mods << std::endl;
 }

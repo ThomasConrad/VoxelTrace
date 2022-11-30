@@ -18,7 +18,16 @@ struct Scene {
     ambient_light_col       (glm::vec3(1,1,1)),
     ambient_light           (0.f){}
 
+    //3d perlin noise model
     static VoxelSpace<Voxel>* noise_model(uint levels, float threshold, float scale);
+    
+    //Load from a magicavoxel file
     static VoxelSpace<Voxel>* magicaVoxel(std::string file_name);
+    
+    //Custom model set in scene source
+    static VoxelSpace<Voxel>* custom();
+    
+    //Passes through one of the other shaders
+    static VoxelSpace<Voxel>* passthrough();
 };
 

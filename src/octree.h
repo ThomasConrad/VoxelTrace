@@ -20,7 +20,7 @@ struct OcTreeResult {
 typedef struct Cell {
     uint8 data[4];  // 24 bit color/pointer + 8 bit data
 	Cell() : data{0,0,0,0}{}
-	Cell(glm::u8vec3 val, uint8 depth) : data{val.x, val.y, val.z, depth}{	}
+	Cell(glm::u8vec3 val, uint8 depth) : data{depth,val.z, val.y, val.x}{	}
     Cell(uint8 a,uint8 b,uint8 c,uint8 d) : data{a,b,c,d}{	}
 } Cell;
 
@@ -93,22 +93,23 @@ class OcTree {
     
     template<typename fake>
     Cell toPayload(Voxel data) {
-        return Cell(glm::u8vec3(data.albedo * 255.0f), 1);
+        glm::u8vec3 tmp = glm::u8vec3(data.albedo * 255.0f);
+        return Cell(1,tmp.z,tmp.y,tmp.x);
     }
     
     template<typename fake>
     Cell toPayload(int data) {
-        return Cell{(uint8)(data),  // encode data in cell
+        return Cell{1,
+                    (uint8)(data),  // encode data in cell
                     (uint8)(data),
-                    (uint8)(data),
-                    1};
+                    (uint8)(data)};
     }
     template<typename fake>
     Cell toPayload(float data) {
-        return Cell{(uint8)(data * 255.0),  // encode data in cell
+        return Cell{1,
+                    (uint8)(data * 255.0),  // encode data in cell
                     (uint8)(data * 255.0),
-                    (uint8)(data * 255.0),
-                    1};
+                    (uint8)(data * 255.0)};
     }
 
     template <typename D, typename fake = void>
@@ -175,6 +176,9 @@ public:
             current_node = current_node->children[subindex];
         }
         subindex = make_subindex_from_index(x, y, z, max_depth);
+        if (!current_node->data){
+            current_node->data = new T[8];  // If the new node is a leaf, allocate the data array
+        }
         current_node->data[subindex] = item;
         current_node->child_exists.set(subindex);
     }

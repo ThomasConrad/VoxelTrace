@@ -8,6 +8,28 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "utility"
 
+VoxelSpace<Voxel>* Scene::passthrough(){
+    //return Scene::magicaVoxel("../../models/cornell.vox");
+    return Scene::noise_model(9,0.0,4);
+    // return Scene::custom();
+}
+
+VoxelSpace<Voxel>* Scene::custom() {
+    uint depth = 1;
+    VoxelSpace<Voxel>* model = new VoxelSpace<Voxel>(BBox(0., 1.), depth);
+    /*for (int i = 0; i < range; i++) {
+        for (int j = 0; j < range; j++) {
+            for (int k = 0; k < range; k++) {
+                glm::vec3 coord = glm::vec3(i,j,k)/(float)range;
+                model->place_voxel_at_point(coord, Voxel());
+            }
+        }
+    }*/
+    model->place_voxel_at_point(glm::vec3(.3f), Voxel(glm::vec3(1.0,0.0,0.0)));
+    model->place_voxel_at_point(glm::vec3(.8f), Voxel());
+    return model;
+}
+
 VoxelSpace<Voxel>* Scene::noise_model(uint levels, float threshold, float scale) {
     uint size = 1 << levels;
     VoxelSpace<Voxel>* model = new VoxelSpace<Voxel>(BBox{0.0f, (float)size, 0.0f, (float)size, 0.0f, (float)size}, levels - 1);

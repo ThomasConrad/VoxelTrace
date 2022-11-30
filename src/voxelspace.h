@@ -67,8 +67,8 @@ public:
         }
         return false;
     }
-
-    VoxelSpace<T>(BBox bounding_box, uint depth) : bounding_box(bounding_box), octree(OcTree<T>(depth)) {
+    VoxelSpace(BBox bounding_box, uint depth)
+        : bounding_box(bounding_box), octree(OcTree<T>(depth)) {
         range = octree.get_range();
         float w_x = bounding_box.x2 - bounding_box.x1;
         float w_y = bounding_box.y2 - bounding_box.y1;
@@ -84,7 +84,6 @@ public:
             w_z / (float)range
         };
     }
-
 
     uint get_range() {
         return range;

@@ -207,7 +207,7 @@ private:
     size_t poolSize;
     IOHandler* ioHandler;
     UniformBufferObject ubo{};
-    std::chrono::steady_clock::time_point lastTime = std::chrono::high_resolution_clock::now();
+    std::chrono::steady_clock::time_point lastTime = std::chrono::steady_clock::now();
     bool framebufferResized = false;
     bool isImGuiWindowCreated = false;
 
@@ -277,26 +277,8 @@ private:
 
     void initOctree(){
         std::cout << "Initializing octree\n";
-        VoxelSpace<Voxel>* model;
-        uint depth = 2;
-        uint range = 1 << (depth+1);
-        //model = Scene::noise_model(2, -0.2, 1);
-        model = new VoxelSpace<Voxel>(BBox(0.,1.), depth);
-        /*for (int i = 0; i < range; i++) {
-            for (int j = 0; j < range; j++) {
-                for (int k = 0; k < range; k++) {
-                    glm::vec3 coord = glm::vec3(i,j,k)/(float)range;
-                    model->place_voxel_at_point(coord, Voxel());
-                }
-            }
-        }*/
-        model->place_voxel_at_point(glm::vec3(.2f), Voxel());
-        model->place_voxel_at_point(glm::vec3(.8f), Voxel());
+        VoxelSpace<Voxel>* model = Scene::passthrough();
 
-        Voxel out;
-        if (model->try_get_voxel_at_point(glm::vec3(.2f), out)) {
-            std::cout << "Found the voxel " << glm::to_string(out.albedo) << std::endl;
-        }
         OcTree<Voxel> tree = model->octree;
         int offset = sizeof(glm::vec4);
         //assert(model->bounding_box.size().x == model->bounding_box.size().y && model->bounding_box.size().y == model->bounding_box.size().z); //Need cubic bbox
@@ -324,20 +306,12 @@ private:
 
     void mainLoop() {
         int frameCount = 0;
-        auto startTime = std::chrono::high_resolution_clock::now();
-        auto time = std::chrono::duration<float, std::chrono::seconds::period>(std::chrono::high_resolution_clock::now() - startTime).count();
+        auto startTime = std::chrono::steady_clock::now();
+        auto time = std::chrono::duration<float, std::chrono::seconds::period>(std::chrono::steady_clock::now() - startTime).count();
         while (!glfwWindowShouldClose(window)){
             glfwPollEvents();
             drawUI();
             drawFrame();
-            
-            frameCount ++;
-            time = std::chrono::duration<float, std::chrono::seconds::period>(std::chrono::high_resolution_clock::now() - startTime).count();
-            if (time > 1.0f) {
-                std::cout << "FPS: " << frameCount / time << "\n";
-                frameCount = 0;
-                startTime = std::chrono::high_resolution_clock::now();
-            }
         }
         
     }
@@ -1807,7 +1781,7 @@ private:
     }
 
     void updateBuffers(uint32_t currentImage) {
-        auto currentTime = std::chrono::high_resolution_clock::now();
+        auto currentTime = std::chrono::steady_clock::now();
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - lastTime).count();
         lastTime = currentTime;
         ioHandler->Tick(time);
