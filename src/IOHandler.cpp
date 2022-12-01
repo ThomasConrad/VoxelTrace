@@ -36,7 +36,7 @@ std::unordered_map<int, bool> keys;
 IOHandler::IOHandler(float length, glm::mat4* ONB, glm::vec4* eye, float fov, GLFWwindow* window) : length{length}, ONB{ONB}, eye{eye}, fov{ fov }, window{window}
 {
     dist = 1.0f / tan(fov / 2.0f);
-    *eye = glm::vec4(glm::vec3(.5), dist);
+    *eye = glm::vec4(glm::vec3(50.,100.,200.), dist);
     started = false;
     for (int key : keysNums) {
         keys[key] = false;

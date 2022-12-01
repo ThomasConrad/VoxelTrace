@@ -9,9 +9,9 @@
 #include "utility"
 
 VoxelSpace<Voxel>* Scene::passthrough(){
-    //return Scene::magicaVoxel("../../models/cornell.vox");
-    return Scene::noise_model(9,0.0,4);
-    // return Scene::custom();
+    return Scene::magicaVoxel("../../models/temple.vox");
+    //return Scene::noise_model(9,0.15,5);
+    //return Scene::custom();
 }
 
 VoxelSpace<Voxel>* Scene::custom() {

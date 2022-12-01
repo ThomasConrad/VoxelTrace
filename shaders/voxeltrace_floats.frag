@@ -125,7 +125,7 @@ bool isInsideUnit(vec3 point){
     return max(dist.x,max(dist.y,dist.z)) < 0.25; //are all squared offset coordinates less than the half distance squared
 }
 
-//Convert an integer representation of a point to a float [0,1]
+/*//Convert an integer representation of a point to a float [0,1]
 vec3 idx2point(ivec3 idx){
     return vec3(idx)*0.0000000004656612873077392578125; //1/(2^30-1)
 }
@@ -133,23 +133,20 @@ vec3 idx2point(ivec3 idx){
 //Convert a float representation of a point [0,1] to an integer
 ivec3 point2idx(vec3 point){
     return ivec3(2147483647.0*point);
-}
+}*/
 
 //Get the index of a point in a gridarray at a given depth
-int getSubindex(ivec3 intPos, int depth){
-    int c = 30 - depth;
-    int mask = 1 << c; 
-    ivec3 bits = (intPos & mask) >> c;
-    return bits.x*4+bits.y*2+bits.z;
+int getSubindex(vec3 pos, int depth){
+    vec3 bits = floor(mod(pos,pow(0.5,depth))*pow(2,depth+1));
+    return int(dot(bits,vec3(4,2,1)));
 }
 
 //Either return the largest safe bbox for a point or the color if the point is in a voxel
 bool bboxOrCol(vec3 pos, inout vec4 val){
-    ivec3 intpos = point2idx(pos); //same representation but as int. Avoids future divisions for speed
     uint gridIdx = 0;
     int depth = 0;
     while(true){
-        int nodeIdx = getSubindex(intpos, depth); 
+        int nodeIdx = getSubindex(pos, depth); 
         Grid grid = pool.grids[gridIdx];
         Cell node = grid.cells[nodeIdx];
         uint w = parseType(node);
@@ -159,9 +156,8 @@ bool bboxOrCol(vec3 pos, inout vec4 val){
             return false;
         }
         else if (w == 0 ){ // If it's zero it's empty and the bbox is safe
-            int c = 30 - depth;
-            vec3 start = idx2point((intpos >> c) << c);
-            float size = float(1 << c) * 0.0000000004656612873077392578125; //1/(2^30-1)
+            vec3 start = floor(pos*pow(2,depth+1))*pow(0.5,depth+1);
+            float size = pow(0.5,depth+1);
             val = vec4(start,size);
             return true;
         }
