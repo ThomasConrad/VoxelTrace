@@ -1,6 +1,8 @@
 #version 450
 #extension GL_EXT_scalar_block_layout: require
 #define eps 2e-7
+#define SHADOWS true
+
 
 //Struct to hold the single cell data from the pool
 struct Cell {
@@ -19,11 +21,22 @@ struct BBox {
     float size;
 };
 
+struct hitObj {
+    vec3 pos;
+    vec3 n;
+    vec3 col;
+};
+
 //Input of rotation, eye and FOV
 layout(binding = 0) uniform UniformBufferObject {
     mat4 ONB;
     vec4 eyeDist;
     float ratio;
+    float lightIntensity;
+    vec3 lightDirection;
+    vec3 lightColor;
+    vec3 ambientIntensity;
+    float ambientColor;
 } ubo;
 
 //SSBO holding the voxel pool
@@ -39,6 +52,16 @@ layout(location = 0) in vec3 dir;
 
 //Color to be displayed for fragment
 layout(location = 0) out vec4 outColor;
+
+// Narkowicz 2015, "ACES Filmic Tone Mapping Curve"
+vec3 aces(vec3 x) {
+  const float a = 2.51;
+  const float b = 0.03;
+  const float c = 2.43;
+  const float d = 0.59;
+  const float e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+}
 
 //Trace a cubic AABB from outside to in 
 bool traceAABB(vec3 orig, vec3 invdir, inout float t, inout vec3 n, BBox bbox){
@@ -148,7 +171,7 @@ bool bboxOrCol(vec3 pos, inout vec4 val){
     ivec3 intpos = point2idx(pos); //same representation but as int. Avoids future divisions for speed
     uint gridIdx = 0;
     int depth = 0;
-    while(true){
+    for (int i = 0; i < 16; i++){
         int nodeIdx = getSubindex(intpos, depth); 
         Grid grid = pool.grids[gridIdx];
         Cell node = grid.cells[nodeIdx];
@@ -171,17 +194,24 @@ bool bboxOrCol(vec3 pos, inout vec4 val){
     }
 }
 
-bool trace(vec3 pos, vec3 dir, vec3 invdir, inout vec4 col){
+bool trace(vec3 pos, vec3 dir, vec3 invdir, inout hitObj hit){
     float t = 0.;
     vec3 n = vec3(0.);
-    while (bboxOrCol(pos, col)){
+    vec4 col;
+    for (int i = 0; i < 64; i++){
+        if (!bboxOrCol(pos, col)){
+            break;
+        }
         BBox safe_bbox = BBox(col.xyz, col.w);
         traceAABBInside(pos, invdir, t, n, safe_bbox);
-        pos += t*dir-n*eps; 
+        pos += t*dir-n*1e-7; 
         if (!isInsideUnit(pos)){
             return false; //Return background color if we traced out
         }
     }
+    hit.pos = pos+n*1e-6;
+    hit.n = n;
+    hit.col = col.xyz;
     return true;
 }
 
@@ -192,13 +222,20 @@ vec3 intersect(vec3 orig, vec3 dir, BBox bbox){
     if (isInside(orig, bbox) || traceAABB(orig, invdir, t, n, bbox)){ // Either inside or trace to the bounding box
         vec3 nodeMin = bbox.pmin;
         float size = bbox.size;
-        vec3 pos = (orig+t*(dir-n*eps)-nodeMin)/size; //step into node and scale to [0,1]
-        vec4 col;
-        if(trace(pos, dir, invdir, col)){
-            return vec3(col);
+        vec3 pos = (orig+t*dir-t*n*eps-nodeMin)/size; //step into node and scale to [0,1]
+        hitObj hit;
+        if(trace(pos, dir, invdir, hit)){
+            vec3 col = hit.col;
+            vec3 shadowCol = vec3(0.);
+            if (SHADOWS){
+                if (!trace(hit.pos, ubo.lightDirection, 1./ubo.lightDirection, hit)){
+                    shadowCol = ubo.lightColor*ubo.lightIntensity*dot(hit.n,ubo.lightDirection);
+                }
+            }
+            return (shadowCol+ubo.ambientColor*ubo.ambientIntensity)*vec3(col);
         }
     }
-    return vec3(0.0,0.0,0.0); //Background color
+    return vec3(0.0); //Background color
 }
 
 void main() {
@@ -210,7 +247,7 @@ void main() {
 
 
 
-    outColor.xyz = intersect(eye, dir, BBox(nodeMin, size));
+    outColor.xyz = aces(intersect(eye, dir, BBox(nodeMin, size)));
     //outColor.xyz = -vec3(dir.z);
     //outColor.xyz = dir;
     outColor.w = 1.0;
