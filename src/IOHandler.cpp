@@ -15,7 +15,7 @@ enum keyNames {
     MOVE_UPWARDS = GLFW_KEY_LEFT_SHIFT,
     MOVE_DOWNWARDS = GLFW_KEY_LEFT_CONTROL,
     QUIT = GLFW_KEY_ESCAPE,
-    SAVE = GLFW_KEY_K
+    MOUSEMODE = GLFW_KEY_LEFT_ALT
 };
 
 int keysNums[] = {
@@ -28,8 +28,7 @@ int keysNums[] = {
     MOVE_UPWARDS,
     MOVE_DOWNWARDS,
     QUIT,
-    SAVE
-};
+    MOUSEMODE};
 
 std::unordered_map<int, bool> keys;
 
@@ -69,13 +68,15 @@ void IOHandler::Tick(float time) {
 void IOHandler::Cursor_Button(){}
 
 void IOHandler::Cursor_Pos(double xpos, double ypos){
-    if (!started){
+    if (mouseFree)
+        return;
+    if (!started) {
         started = true;
         return;
     }
     glm::vec2 pos(xpos,ypos);
     glm::vec2 delta = (lastMouse-pos)*1e-3f;
-    if (glm::dot(delta,delta) < 1000){
+    if (glm::dot(delta,delta) < 8e-2){
         //*ONB = glm::rotate(*ONB, delta.x, glm::vec3(0.0,1.0,0.0));
         rot = glm::rotate(rot, delta.x, glm::vec3(0.0, 1.0, 0.0));
         // 
@@ -94,9 +95,17 @@ void IOHandler::Key(int key, int scancode, int action, int mods) {
         switch (key)
         {
         case QUIT:
+            
             glfwSetWindowShouldClose(window, action);
             break;
-        
+        case MOUSEMODE:
+            mouseFree = action;
+            if (!action) {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            } else {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            }
+            break;
         default:
             break;
         }

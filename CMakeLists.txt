@@ -6,7 +6,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(BIN_NAME "VoxelTrace")
 file(GLOB IMGUI_SRC "${PROJECT_SOURCE_DIR}/include/imgui/*.cpp")
-add_definitions( -DSRCDIR="${PROJECT_SOURCE_DIR}")
+#add_definitions( -DSRCDIR="${PROJECT_SOURCE_DIR}")
 
 if(WIN32)
     #include("C:/src/vcpkg/scripts/buildsystems/vcpkg.cmake")

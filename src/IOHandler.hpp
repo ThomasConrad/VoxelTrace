@@ -12,6 +12,7 @@ private:
     float dist;
     glm::quat rot;
     GLFWwindow* window;
+    bool mouseFree = false;
 
 public:
     bool mouseOn;

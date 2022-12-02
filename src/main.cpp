@@ -19,6 +19,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -311,7 +312,7 @@ private:
         }*/
 
         ioHandler = new IOHandler(model->bounding_box.size().x, &ubo.ONB, &ubo.eye, 45, window);
-
+        std::cout << poolSize / sizeof(Grid) << std::endl;
         free(model);
         return;
     }
@@ -1009,8 +1010,7 @@ private:
     //Create image buffer from file
     void createTextureImage(){
         int texWidth, texHeight, texChannels;
-        std::string prefix = SRCDIR;
-        std::string path = prefix + '/' + "textures/texture.jpg";
+        std::string path = "../texture.jpg";
         stbi_uc* pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
         VkDeviceSize imageSize = texWidth * texHeight * 4;
 
@@ -1698,13 +1698,9 @@ private:
         static int counter = 0;
 
         ImGui::Begin("Renderer Options");
-        ImGui::Text("This is some useful text.");
-        ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
-        if (ImGui::Button("Button")) {
-            counter++;
+        if (ImGui::SliderFloat3("lightDir", glm::value_ptr(ubo.lightDirection), -1.0f, 1.0f)){
+            ubo.lightDirection = glm::normalize(ubo.lightDirection);
         }
-        ImGui::SameLine();
-        ImGui::Text("counter = %d", counter);
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
         ImGui::End();

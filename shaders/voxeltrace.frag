@@ -63,6 +63,69 @@ vec3 aces(vec3 x) {
   return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
 }
 
+//https://www.shadertoy.com/view/7ttXDl#
+vec3 skybox(vec3 dir)
+{
+    vec3 sun_pos = normalize(ubo.lightDirection);
+
+    vec3 col = vec3(0.);
+    
+    vec3 p_sunset_dark[4] = vec3[4](
+        vec3(0.3720705374951474, 0.3037080684557225, 0.26548632969565816),
+        vec3(0.446163834012046, 0.39405890487346595, 0.425676737673072),
+        vec3(0.16514907579431481, 0.40461292460006665, 0.8799446225003938),
+        vec3(-7.057075230154481e-17, -0.08647963850488945, -0.269042973306185)
+    );
+
+    vec3 p_sunset_bright[4] = vec3[4](
+        vec3( 0.38976745480184677, 0.31560358280318124,  0.27932656874),
+        vec3( 1.2874522895367628,  1.0100154283349794,   0.862325457544),
+        vec3( 0.12605043174959588, 0.23134451619328716,  0.526179948359),
+        vec3(-0.0929868539256387, -0.07334463258550537, -0.192877259333)
+    );
+
+    vec3 p_day[4] = vec3[4](
+        vec3(0.051010496458305694, 0.09758747153634058, 0.14233364823001612),
+        vec3(0.7216045769411271, 0.8130766810405122, 0.9907063181559062),
+        vec3(0.23738746590578705, 0.6037047603190588, 1.279274525377467),
+        vec3(-4.834172446370963e-16, 0.1354589259524697, -1.4694301190050114e-15)
+    );
+
+    /* Sky */
+    {
+        float brightness_a = acos(dot(dir, sun_pos));
+        float brightness_d = 1.5 * smoothstep(radians(80.), radians(0.), brightness_a) - .5;
+    
+        vec3 p_sunset[4] = vec3[4](
+            mix(p_sunset_dark[0], p_sunset_bright[0], brightness_d),
+            mix(p_sunset_dark[1], p_sunset_bright[1], brightness_d),
+            mix(p_sunset_dark[2], p_sunset_bright[2], brightness_d),
+            mix(p_sunset_dark[3], p_sunset_bright[3], brightness_d)
+        );
+
+        float sun_a = acos(dot(sun_pos, vec3(0., 1., 0.)));
+        float sun_d = smoothstep(radians(100.), radians(60.), sun_a);
+
+        vec3 a = mix(p_sunset[0], p_day[0], sun_d);
+        vec3 b = mix(p_sunset[1], p_day[1], sun_d);
+        vec3 c = mix(p_sunset[2], p_day[2], sun_d);
+        vec3 d = mix(p_sunset[3], p_day[3], sun_d);
+
+        float sky_a = acos(dot(dir, vec3(0., 1., 0.)));
+        float sky_d = smoothstep(radians(90.), radians(60.), sky_a);
+
+        // sin(1/x) suggested by Phillip Trudeau
+        col += (b - d) * sin(1. / (vec3(sky_d) / c + 2. / radians(180.) - a)) + d;
+    }
+
+    /* Sun */
+    float sun_a = acos(dot(sun_pos, dir));
+    vec3 sun_col = .01 * vec3(1., .95, .95) / sun_a;
+    col = max(col + .5 * sun_col, sun_col);
+
+    return col;
+}
+
 //Trace a cubic AABB from outside to in 
 bool traceAABB(vec3 orig, vec3 invdir, inout float t, inout vec3 n, BBox bbox){
 
@@ -188,7 +251,7 @@ bool bboxOrCol(vec3 pos, inout vec4 val){
             val = vec4(start,size);
             return true;
         }
-        gridIdx+=parseidx(node); //Step to next level
+        gridIdx += parseidx(node); //Step to next level
         depth += 1;
         // If it's 2 we must go deeper
     }
@@ -198,7 +261,7 @@ bool trace(vec3 pos, vec3 dir, vec3 invdir, inout hitObj hit){
     float t = 0.;
     vec3 n = vec3(0.);
     vec4 col;
-    for (int i = 0; i < 64; i++){
+    for (int i = 0; i < 128; i++){
         if (!bboxOrCol(pos, col)){
             break;
         }
@@ -214,6 +277,7 @@ bool trace(vec3 pos, vec3 dir, vec3 invdir, inout hitObj hit){
     hit.col = col.xyz;
     return true;
 }
+
 
 vec3 intersect(vec3 orig, vec3 dir, BBox bbox){
     float t = 0.;
@@ -235,7 +299,7 @@ vec3 intersect(vec3 orig, vec3 dir, BBox bbox){
             return (shadowCol+ubo.ambientColor*ubo.ambientIntensity)*vec3(col);
         }
     }
-    return vec3(0.0); //Background color
+    return skybox(normalize(dir)); //Background color
 }
 
 void main() {
