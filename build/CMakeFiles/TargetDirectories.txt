@@ -1,0 +1,8 @@
+C:/Users/thoma/Documents/VoxelTrace/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/thoma/Documents/VoxelTrace/build/CMakeFiles/ZERO_CHECK.dir
+C:/Users/thoma/Documents/VoxelTrace/build/src/CMakeFiles/imgui.dir
+C:/Users/thoma/Documents/VoxelTrace/build/src/CMakeFiles/scene.dir
+C:/Users/thoma/Documents/VoxelTrace/build/src/CMakeFiles/iohandler.dir
+C:/Users/thoma/Documents/VoxelTrace/build/src/CMakeFiles/VoxelTrace.dir
+C:/Users/thoma/Documents/VoxelTrace/build/src/CMakeFiles/octest.dir
+C:/Users/thoma/Documents/VoxelTrace/build/src/CMakeFiles/compileShaders.dir

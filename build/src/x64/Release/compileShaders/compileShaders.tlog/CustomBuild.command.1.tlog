@@ -1,0 +1,24 @@
+^C:\USERS\THOMA\DOCUMENTS\VOXELTRACE\BUILD\CMAKEFILES\3D2809F3B22DCB4F399B46D9C110517F\COMPILESHADERS.RULE
+setlocal
+cd C:\Users\thoma\Documents\VoxelTrace\build\shaders
+if %errorlevel% neq 0 goto :cmEnd
+C:
+if %errorlevel% neq 0 goto :cmEnd
+C:\Users\thoma\Documents\VoxelTrace\shaders\compile.sh C:/Users/thoma/Documents/VoxelTrace/shaders
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
+^C:\USERS\THOMA\DOCUMENTS\VOXELTRACE\SRC\CMAKELISTS.TXT
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/thoma/Documents/VoxelTrace -BC:/Users/thoma/Documents/VoxelTrace/build --check-stamp-file C:/Users/thoma/Documents/VoxelTrace/build/src/CMakeFiles/generate.stamp
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

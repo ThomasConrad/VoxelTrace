@@ -1011,7 +1011,7 @@ private:
     void createTextureImage(){
         int texWidth, texHeight, texChannels;
 
-        std::string path = "../texture.jpg";
+        std::string path = "../textures/texture.jpg";
         stbi_uc* pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
         VkDeviceSize imageSize = texWidth * texHeight * 4;
 
