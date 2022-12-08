@@ -31,8 +31,8 @@
 #include "IOHandler.hpp"
 #include "scene.h"
 
-const uint32_t WIDTH = 3840;
-const uint32_t HEIGHT = 2160;
+const uint32_t WIDTH = 1920;
+const uint32_t HEIGHT = 1080;
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
