@@ -31,8 +31,8 @@
 #include "IOHandler.hpp"
 #include "scene.h"
 
-const uint32_t WIDTH = 1920;
-const uint32_t HEIGHT = 1080;
+const uint32_t WIDTH = 3840;
+const uint32_t HEIGHT = 2160;
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -204,7 +204,7 @@ private:
     std::vector<VkFence> inFlightFences;
 
     VkPhysicalDeviceLimits deviceLimits;
-    VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+    VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_16_BIT;
 
     uint32_t currentFrame = 0;
 
@@ -330,8 +330,8 @@ private:
             drawUI();
             drawFrame();
         }
-        
-    }
+        vkDeviceWaitIdle(device);
+        }
 
     // Destroys all the resources associated with swapchain recreation
     void cleanupSwapChain() {
@@ -1850,7 +1850,7 @@ private:
                 }
             }
 
-            physicalDevice = devices[0];
+            physicalDevice = devices[use_gpu];
             msaaSamples = getMaxUsableSampleCount();
             VkPhysicalDeviceProperties deviceInfo;
             vkGetPhysicalDeviceProperties(physicalDevice, &deviceInfo);

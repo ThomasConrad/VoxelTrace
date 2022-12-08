@@ -234,7 +234,7 @@ bool bboxOrCol(vec3 pos, inout vec4 val){
     ivec3 intpos = point2idx(pos); //same representation but as int. Avoids future divisions for speed
     uint gridIdx = 0;
     int depth = 0;
-    for (int i = 0; i < 16; i++){
+    while (true){
         int nodeIdx = getSubindex(intpos, depth); 
         Grid grid = pool.grids[gridIdx];
         Cell node = grid.cells[nodeIdx];
@@ -261,7 +261,7 @@ bool trace(vec3 pos, vec3 dir, vec3 invdir, inout hitObj hit){
     float t = 0.;
     vec3 n = vec3(0.);
     vec4 col;
-    for (int i = 0; i < 128; i++){
+    while (true){
         if (!bboxOrCol(pos, col)){
             break;
         }
