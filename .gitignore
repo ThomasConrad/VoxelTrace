@@ -1,7 +1,6 @@
 *.spv
 *.o
 .vscode/
-build/
 .vs/
 MagicaVoxel-0.99.7.0-win64/
 *.aux

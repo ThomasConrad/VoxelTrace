@@ -1,0 +1,5 @@
+C:/Users/thoma/Documents/VoxelTrace/build/CMakeFiles/scene.dir
+C:/Users/thoma/Documents/VoxelTrace/build/CMakeFiles/tracer.dir
+C:/Users/thoma/Documents/VoxelTrace/build/CMakeFiles/GraphicsProject.dir
+C:/Users/thoma/Documents/VoxelTrace/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/thoma/Documents/VoxelTrace/build/CMakeFiles/ZERO_CHECK.dir
