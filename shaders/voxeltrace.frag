@@ -32,6 +32,7 @@ layout(binding = 0) uniform UniformBufferObject
   mat4 ONB;
   vec4 eyeDist;
   float ratio;
+  uint framenum;
   float lightIntensity;
   vec3 lightDirection;
   vec3 lightColor;
@@ -75,33 +76,24 @@ vec3 skybox(vec3 dir)
   vec3 col = vec3(0.);
 
   vec3 p_sunset_dark[4] = vec3[4](
-      vec3(0.3720705374951474, 0.3037080684557225, 0.26548632969565816),
-      vec3(0.446163834012046, 0.39405890487346595, 0.425676737673072),
-      vec3(0.16514907579431481, 0.40461292460006665, 0.8799446225003938),
-      vec3(-7.057075230154481e-17, -0.08647963850488945, -0.269042973306185));
+      vec3(0.3720705374951474, 0.3037080684557225, 0.26548632969565816), vec3(0.446163834012046, 0.39405890487346595, 0.425676737673072),
+      vec3(0.16514907579431481, 0.40461292460006665, 0.8799446225003938), vec3(-7.057075230154481e-17, -0.08647963850488945, -0.269042973306185));
 
-  vec3 p_sunset_bright[4] = vec3[4](
-      vec3(0.38976745480184677, 0.31560358280318124, 0.27932656874),
-      vec3(1.2874522895367628, 1.0100154283349794, 0.862325457544),
-      vec3(0.12605043174959588, 0.23134451619328716, 0.526179948359),
-      vec3(-0.0929868539256387, -0.07334463258550537, -0.192877259333));
+  vec3 p_sunset_bright[4] =
+      vec3[4](vec3(0.38976745480184677, 0.31560358280318124, 0.27932656874), vec3(1.2874522895367628, 1.0100154283349794, 0.862325457544),
+              vec3(0.12605043174959588, 0.23134451619328716, 0.526179948359), vec3(-0.0929868539256387, -0.07334463258550537, -0.192877259333));
 
   vec3 p_day[4] = vec3[4](
-      vec3(0.051010496458305694, 0.09758747153634058, 0.14233364823001612),
-      vec3(0.7216045769411271, 0.8130766810405122, 0.9907063181559062),
-      vec3(0.23738746590578705, 0.6037047603190588, 1.279274525377467),
-      vec3(-4.834172446370963e-16, 0.1354589259524697, -1.4694301190050114e-15));
+      vec3(0.051010496458305694, 0.09758747153634058, 0.14233364823001612), vec3(0.7216045769411271, 0.8130766810405122, 0.9907063181559062),
+      vec3(0.23738746590578705, 0.6037047603190588, 1.279274525377467), vec3(-4.834172446370963e-16, 0.1354589259524697, -1.4694301190050114e-15));
 
   /* Sky */
   {
     float brightness_a = acos(dot(dir, sun_pos));
     float brightness_d = 1.5 * smoothstep(radians(80.), radians(0.), brightness_a) - .5;
 
-    vec3 p_sunset[4] = vec3[4](
-        mix(p_sunset_dark[0], p_sunset_bright[0], brightness_d),
-        mix(p_sunset_dark[1], p_sunset_bright[1], brightness_d),
-        mix(p_sunset_dark[2], p_sunset_bright[2], brightness_d),
-        mix(p_sunset_dark[3], p_sunset_bright[3], brightness_d));
+    vec3 p_sunset[4] = vec3[4](mix(p_sunset_dark[0], p_sunset_bright[0], brightness_d), mix(p_sunset_dark[1], p_sunset_bright[1], brightness_d),
+                               mix(p_sunset_dark[2], p_sunset_bright[2], brightness_d), mix(p_sunset_dark[3], p_sunset_bright[3], brightness_d));
 
     float sun_a = acos(dot(sun_pos, vec3(0., 1., 0.)));
     float sun_d = smoothstep(radians(100.), radians(60.), sun_a);
@@ -182,22 +174,17 @@ void traceAABBInside(vec3 orig, vec3 invdir, inout float t, inout vec3 n, BBox b
 }
 
 // Convert last byte in Cell (32 bit int) to uint(8bit)
-uint parseType(Cell cell)
-{
-  return cell.data & 0x000000FF;
-}
+uint parseType(Cell cell) { return cell.data & 0x000000FF; }
 
 // Convert three first bytes in Cell (3x8 bit uint) to vec3(3x8bit)
 vec3 parseCol(Cell cell)
-{                                                                                                                                                 // Range between 0 and 1
-  return vec3((cell.data & 0xFF000000) >> 24, (cell.data & 0x00FF0000) >> 16, (cell.data & 0x0000FF00) >> 8) * 0.0039215688593685626983642578125; // multiply by 1/255
+{ // Range between 0 and 1
+  return vec3((cell.data & 0xFF000000) >> 24, (cell.data & 0x00FF0000) >> 16, (cell.data & 0x0000FF00) >> 8) *
+         0.0039215688593685626983642578125; // multiply by 1/255
 }
 
 // Convert three first bytes in Cell (32 bit uint) to uint(24bit)
-uint parseidx(Cell cell)
-{
-  return cell.data >> 8;
-}
+uint parseidx(Cell cell) { return cell.data >> 8; }
 
 // Check whether a point is inside a bounding box
 bool isInside(vec3 point, BBox bbox)
@@ -225,10 +212,7 @@ vec3 idx2point(ivec3 idx)
 }
 
 // Convert a float representation of a point [0,1] to an integer
-ivec3 point2idx(vec3 point)
-{
-  return ivec3(2147483647.0 * point);
-}
+ivec3 point2idx(vec3 point) { return ivec3(2147483647.0 * point); }
 
 // Get the index of a point in a gridarray at a given depth
 int getSubindex(ivec3 intPos, int depth)
@@ -304,11 +288,16 @@ vec3 intersect(vec3 orig, vec3 dir, BBox bbox)
       vec3 col       = hit.col;
       vec3 shadowCol = vec3(0.);
 #if defined(SHADOWS)
-      if (!trace(hit.pos, ubo.lightDirection, 1. / ubo.lightDirection, hit)) {
+      vec3 nn = vec3(0.);
+      // check border
+      if (!isInside(hit.pos * size + nodeMin + n * 1e-4, bbox) && dot(ubo.lightDirection, n) > 0.) {
+        shadowCol = ubo.lightColor * ubo.lightIntensity * dot(normalize(n), ubo.lightDirection);
+      }
+      // check inside
+      else if (!trace(hit.pos, ubo.lightDirection, 1. / ubo.lightDirection, hit)) {
         shadowCol = ubo.lightColor * ubo.lightIntensity * dot(hit.n, ubo.lightDirection);
       }
 #endif
-      shadowCol = vec3(1.0);
       return (shadowCol + ubo.ambientColor * ubo.ambientIntensity) * vec3(col);
     }
   }

@@ -8,4 +8,4 @@ BreakBeforeBraces: Stroustrup
 IncludeBlocks: Preserve
 IndentCaseLabels: "false"
 SortIncludes: "false"
-ColumnLimit: 0
+ColumnLimit: 150

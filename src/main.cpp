@@ -1233,8 +1233,8 @@ private:
     }
     
     void createGraphicsPipeline() {
-        VkShaderModule vertShaderModule = createShaderModule("shaders/voxeltrace.vert.spv");
-        VkShaderModule fragShaderModule = createShaderModule("shaders/voxeltrace.frag.spv");
+        VkShaderModule vertShaderModule = createShaderModule("build/shaders/voxeltrace.vert.spv");
+        VkShaderModule fragShaderModule = createShaderModule("build/shaders/voxeltrace.frag.spv");
 
         VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
         vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
