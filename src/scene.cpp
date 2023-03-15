@@ -20,7 +20,7 @@ Scene::Scene()
 VoxelSpace<Voxel> *Scene::passthrough()
 {
   // return Scene::magicaVoxel("models/temple.vox");
-  return Scene::noise_model(5, 0.15, 5);
+  return Scene::noise_model(7, 0.15, 5);
   // return Scene::custom();
 }
 
