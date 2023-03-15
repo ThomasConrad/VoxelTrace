@@ -11,7 +11,7 @@
 #include <limits> // Necessary for std::numeric_limits
 #include <algorithm> // Necessary for std::clamp
 #include <fstream> //Load files
-#include <shaderc/shaderc.hpp>
+//#include <shaderc/shaderc.hpp>
 #include <array>
 #include <chrono>
 
@@ -47,7 +47,7 @@ const std::vector<const char*> deviceExtensions = {
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
 #else
-const bool enableValidationLayers = true;
+const bool enableValidationLayers = false;
 #endif
 static void check_vk_result(VkResult err)
 {
@@ -115,6 +115,7 @@ struct UniformBufferObject {
     alignas(16) glm::mat4 ONB;
     alignas(16) glm::vec4 eye;
     alignas(4) float ratio;
+    alignas(4) uint framenum;
     alignas(4) float lightIntensity;
     alignas(16) glm::vec3 lightDirection;
     alignas(16) glm::vec3 lightColor;
@@ -322,13 +323,14 @@ private:
     }
 
     void mainLoop() {
-        int frameCount = 0;
+        ubo.framenum = 0;
         auto startTime = std::chrono::steady_clock::now();
         auto time = std::chrono::duration<float, std::chrono::seconds::period>(std::chrono::steady_clock::now() - startTime).count();
         while (!glfwWindowShouldClose(window)){
             glfwPollEvents();
             drawUI();
             drawFrame();
+            ubo.framenum ++;
         }
         vkDeviceWaitIdle(device);
         }
@@ -1009,7 +1011,7 @@ private:
 
     //Create image buffer from file
     void createTextureImage(){
-        int texWidth, texHeight, texChannels;
+        /* int texWidth, texHeight, texChannels;
 
         std::string path = "../textures/texture.jpg";
         stbi_uc* pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
@@ -1017,8 +1019,10 @@ private:
 
         if (!pixels) {
             throw std::runtime_error("failed to load texture image!");
-        }
-
+        } */
+        int texWidth, texHeight, texChannels;
+        VkDeviceSize imageSize = 4;
+        stbi_uc *pixels = new stbi_uc[4];
         VkBuffer stagingBuffer;
         VkDeviceMemory stagingBufferMemory;
         createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
@@ -1229,8 +1233,8 @@ private:
     }
     
     void createGraphicsPipeline() {
-        VkShaderModule vertShaderModule = createShaderModule("../shaders/voxeltrace.vert.spv");
-        VkShaderModule fragShaderModule = createShaderModule("../shaders/voxeltrace.frag.spv");
+        VkShaderModule vertShaderModule = createShaderModule("shaders/voxeltrace.vert.spv");
+        VkShaderModule fragShaderModule = createShaderModule("shaders/voxeltrace.frag.spv");
 
         VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
         vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

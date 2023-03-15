@@ -16,8 +16,8 @@ Scene::Scene()
       ambient_light(0.2f) {}
 
 VoxelSpace<Voxel>* Scene::passthrough(){
-    return Scene::magicaVoxel("../../models/temple.vox");
-    //return Scene::noise_model(9,0.15,5);
+    //return Scene::magicaVoxel("../models/teapot.vox");
+    return Scene::noise_model(5,0.15,5);
     //return Scene::custom();
 }
 
@@ -66,9 +66,9 @@ VoxelSpace<Voxel>* Scene::noise_model(uint levels, float threshold, float scale)
 VoxelSpace<Voxel>* Scene::magicaVoxel(std::string file_name) {
     //load file into buffer
     FILE* fp;
-    errno_t err;
+    //errno_t err;
    
-    if ((err = fopen_s(&fp, file_name.c_str(), "r")) != 0){
+    if ((fp = fopen(file_name.c_str(), "r")) == NULL){
         throw std::runtime_error("cannot open file!");
     }
     fseek(fp, 0, SEEK_END);

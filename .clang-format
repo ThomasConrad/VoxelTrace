@@ -1,0 +1,11 @@
+﻿BasedOnStyle: LLVM
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: "true"
+AlignTrailingComments: "true"
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLambdasOnASingleLine: Inline
+BreakBeforeBraces: Stroustrup
+IncludeBlocks: Preserve
+IndentCaseLabels: "false"
+SortIncludes: "false"
+ColumnLimit: 0

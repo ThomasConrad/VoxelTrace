@@ -10,3 +10,6 @@ MagicaVoxel-0.99.7.0-win64/
 *.out
 *.gz
 body
+.cache/
+build/
+CMakeFiles/
